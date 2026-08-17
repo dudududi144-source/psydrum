@@ -2,6 +2,28 @@
 
 Phased build plan for the PSY Drum Device. Every phase ends GREEN (all tests pass, no secrets, docs consistent). Each phase is small enough to review in one sitting and ships a testable increment. Read `ARCHITECTURE.md` and `ARCHITECTURE-STYLE.md` first; this plan is the ordering, the architecture is the source of truth.
 
+## Progress
+
+| Phase | Name | Status |
+|---|---|---|
+| 0 | Repo scaffolding | ✅ landed |
+| 1 | Foundation shim (verbatim) | ✅ landed |
+| 2 | Core types + counters + latency | ✅ landed |
+| 3 | Note router (contract layer) | ✅ landed |
+| 4 | Choke groups | ✅ landed |
+| 5 | Voice DSP (analog-modeled chains) | ✅ landed (deterministic core; OfflineAudioContext render proof lands with the device/host) |
+| 6 | Voice pool | ✅ landed |
+| 7 | Kit library | ✅ landed |
+| 8 | Variance rules (determinism) | ✅ landed |
+| 9 | MIDI map + learn | ✅ landed |
+| 10 | Device assembly + factory | ⬜ next |
+| 11 | Contract + shim-sync tests | ⬜ |
+| 12 | Stress + render-proof + benchmarks | ⬜ |
+| 13 | Style acceptance tests | ⬜ |
+| 14 | Sample layer (optional) | ⬜ |
+| 15 | Bundle build + size budget | ⬜ |
+| 16 | Demo page + integration proof | ⬜ |
+
 ## Ground rules (apply to every phase)
 
 1. **Device is pure HOW.** No composition, no scheduling policy, no transport ownership, no pattern ownership. If a phase is tempted to add a pattern/phrase constant, it is a WHAT leak and must be rejected.
