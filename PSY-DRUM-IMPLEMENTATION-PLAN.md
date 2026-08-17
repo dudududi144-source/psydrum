@@ -16,8 +16,8 @@ Phased build plan for the PSY Drum Device. Every phase ends GREEN (all tests pas
 | 7 | Kit library | ✅ landed |
 | 8 | Variance rules (determinism) | ✅ landed |
 | 9 | MIDI map + learn | ✅ landed |
-| 10 | Device assembly + factory | ⬜ next |
-| 11 | Contract + shim-sync tests | ⬜ |
+| 10 | Device assembly + factory | ✅ landed |
+| 11 | Contract + shim-sync tests | ⬜ next |
 | 12 | Stress + render-proof + benchmarks | ⬜ |
 | 13 | Style acceptance tests | ⬜ |
 | 14 | Sample layer (optional) | ⬜ |
