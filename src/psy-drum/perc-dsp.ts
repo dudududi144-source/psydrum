@@ -76,8 +76,10 @@ export function renderHatSamples(p: HatParams): Float32Array {
     const hpNoise = noise - lp
     const attack = Math.min(1, t / 0.0008)
     const decay = Math.exp(-t / decaySec)
-    let sig = hpNoise * attack * decay
+    let sig = hpNoise * 0.5 * attack * decay
     sig = Math.tanh(sig * drive) / Math.tanh(drive)
+    if (sig > 1) sig = 1
+    if (sig < -1) sig = -1
     out[i] = sig
   }
   return out
