@@ -7,7 +7,6 @@
   "scripts": {
     "test": "bun test",
     "check": "bun run scripts/check.ts",
-    "bundle": "bun run scripts/build-bundle.ts",
     "secret-scan": "bun run scripts/secret-scan.ts"
   }
 }
