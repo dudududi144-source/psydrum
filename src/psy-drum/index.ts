@@ -59,3 +59,6 @@ export type { GrooveTemplate } from './grooves'
 
 export { renderPsyKickSamples, renderPsyKickInto } from './kick-dsp'
 export type { KickParams } from './kick-dsp'
+
+export { renderSnareSamples, renderHatSamples, renderSnareInto, renderHatInto } from './perc-dsp'
+export type { SnareParams, HatParams } from './perc-dsp'
