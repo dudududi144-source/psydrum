@@ -3,52 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PSYDRUM — live demo</title>
+  <title>PSYDRUM — live demo + step sequencer</title>
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
+      margin: 0; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 18px;
       font-family: system-ui, -apple-system, sans-serif;
       background: radial-gradient(1200px 600px at 50% -10%, #2a1250, #0b0616 60%);
-      color: #e8e2ff;
-      padding: 32px;
+      color: #e8e2ff; padding: 28px;
     }
     h1 { font-weight: 800; letter-spacing: 0.04em; margin: 0; }
     h1 span { color: #b388ff; }
-    .sub { opacity: 0.7; max-width: 640px; text-align: center; line-height: 1.5; margin: 0; }
-    .pads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: min(560px, 92vw); }
-    .pad {
-      padding: 22px 10px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
-      color: #e8e2ff;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 60ms ease, background 60ms ease;
-      text-align: center;
-    }
-    .pad small { display: block; font-weight: 400; opacity: 0.55; margin-top: 4px; }
-    .pad.hit { transform: scale(0.96); background: rgba(179,136,255,0.28); }
-    .bar { display: flex; gap: 12px; align-items: center; }
+    .sub { opacity: 0.7; max-width: 680px; text-align: center; line-height: 1.45; margin: 0; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
     button.action {
-      padding: 12px 20px;
-      border-radius: 999px;
+      padding: 11px 18px; border-radius: 999px;
       border: 1px solid rgba(179,136,255,0.6);
-      background: rgba(179,136,255,0.18);
-      color: #e8e2ff;
-      font-weight: 700;
-      cursor: pointer;
+      background: rgba(179,136,255,0.18); color: #e8e2ff;
+      font-weight: 700; cursor: pointer;
     }
+    button.action.primary { background: rgba(179,136,255,0.4); }
+    label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; opacity: 0.85; }
+    input[type=range] { accent-color: #b388ff; }
+    .seq { width: min(760px, 96vw); display: flex; flex-direction: column; gap: 4px; }
+    .seqrow { display: grid; grid-template-columns: 74px repeat(16, 1fr); gap: 3px; align-items: center; }
+    .seqrow .rlabel { font-size: 11px; opacity: 0.7; text-align: right; padding-right: 8px; }
+    .cell {
+      height: 26px; border-radius: 5px; cursor: pointer;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    }
+    .cell:nth-child(4n+2) { background: rgba(255,255,255,0.09); } /* beat accents */
+    .cell.on { background: rgba(179,136,255,0.6); border-color: rgba(179,136,255,0.9); }
+    .cell.playhead { box-shadow: 0 0 0 2px rgba(255,255,255,0.55) inset; }
+    .pads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(560px, 92vw); }
+    .pad {
+      padding: 18px 10px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
+      color: #e8e2ff; font-size: 14px; font-weight: 600; cursor: pointer;
+      user-select: none; text-align: center; transition: transform 60ms ease, background 60ms ease;
+    }
+    .pad small { display: block; font-weight: 400; opacity: 0.55; margin-top: 3px; }
+    .pad.hit { transform: scale(0.96); background: rgba(179,136,255,0.28); }
     .note { opacity: 0.55; font-size: 13px; }
     a { color: #b388ff; }
   </style>
@@ -56,87 +54,208 @@
 <body>
   <h1>PSY<span>DRUM</span></h1>
   <p class="sub">
-    The canonical drum realization device for the PSY family — analog-modeled drum synthesis,
-    choke groups, velocity-to-timbre, deterministic. This page runs the bundled device in your browser.
+    Analog-modeled drum device for the PSY family. Below: a 16-step sequencer (host-side WHAT)
+    driving the device, plus live pads. Every drum has its own synthesis chain.
   </p>
 
-  <div class="bar">
-    <button class="action" id="startBtn">▶ start audio</button>
+  <div class="row">
+    <button class="action primary" id="startBtn">▶ start audio</button>
+    <button class="action" id="seqPlayBtn">⏵ play sequence</button>
+    <label class="ctl">BPM <input type="range" id="bpmRange" min="90" max="160" value="138"><span id="bpmVal">138</span></label>
+    <label class="ctl">swing <input type="range" id="swingRange" min="0" max="60" value="0"><span id="swingVal">0%</span></label>
+    <button class="action" id="clearBtn">clear</button>
+    <button class="action" id="psyBtn">psy gallop preset</button>
   </div>
+
+  <div class="seq" id="seq"></div>
 
   <div class="pads" id="pads"></div>
 
   <p class="note">
     Source: <a href="https://github.com/dudududi144-source/psydrum">dudududi144-source/psydrum</a>
-    · phases 0–11 landed · demo = phase 16 preview
+    · device = pure HOW (phases 0–11) · sequencer = host-side demo (phase 16 preview)
   </p>
 
   <script type="module">
-    // The bundle is produced by `bun run bundle` (scripts/build-bundle.ts) into
-    // public/psydrum.js and deployed alongside this page by the Pages workflow.
     import { createDrumDevice } from './psydrum.js'
 
     const startBtn = document.getElementById('startBtn')
+    const seqPlayBtn = document.getElementById('seqPlayBtn')
+    const bpmRange = document.getElementById('bpmRange')
+    const bpmVal = document.getElementById('bpmVal')
+    const swingRange = document.getElementById('swingRange')
+    const swingVal = document.getElementById('swingVal')
+    const clearBtn = document.getElementById('clearBtn')
+    const psyBtn = document.getElementById('psyBtn')
+    const seqEl = document.getElementById('seq')
     const padsEl = document.getElementById('pads')
 
-    // GM-style drum pads: [label, midi note, channel]
-    const PADS = [
+    // [label, midi note, channel]
+    const DRUMS = [
       ['KICK', 36, 'kick'],
       ['SNARE', 38, 'snare'],
       ['CLAP', 39, 'clap'],
-      ['HAT (c)', 42, 'hat-closed'],
-      ['HAT (o)', 46, 'hat-open'],
+      ['HAT-C', 42, 'hat-closed'],
+      ['HAT-O', 46, 'hat-open'],
       ['TOM', 45, 'tom'],
       ['CRASH', 49, 'crash'],
       ['RIDE', 51, 'ride'],
       ['PERC', 56, 'perc'],
     ]
+    const STEPS = 16
+
+    // pattern[row][step] = on/off
+    const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
 
     let ctx = null
     let device = null
+    let bpm = 138
+    let swing = 0
+    let seqPlaying = false
+    let seqStep = 0
+    let seqNextTime = 0
+    let seqTimer = null
+    let playheadCells = []
 
+    // ── build the 16-step grid ──
+    function buildSeq() {
+      seqEl.innerHTML = ''
+      playheadCells = []
+      for (let r = 0; r < DRUMS.length; r++) {
+        const row = document.createElement('div')
+        row.className = 'seqrow'
+        const lab = document.createElement('div')
+        lab.className = 'rlabel'
+        lab.textContent = DRUMS[r][0]
+        row.appendChild(lab)
+        playheadCells.push([])
+        for (let s = 0; s < STEPS; s++) {
+          const cell = document.createElement('div')
+          cell.className = 'cell' + (pattern[r][s] ? ' on' : '')
+          cell.addEventListener('pointerdown', () => {
+            pattern[r][s] = !pattern[r][s]
+            cell.classList.toggle('on', pattern[r][s])
+          })
+          row.appendChild(cell)
+          playheadCells[r].push(cell)
+        }
+        seqEl.appendChild(row)
+      }
+    }
+
+    function setPlayhead(step) {
+      for (let r = 0; r < DRUMS.length; r++) {
+        for (let s = 0; s < STEPS; s++) {
+          playheadCells[r][s].classList.toggle('playhead', s === step)
+        }
+      }
+    }
+
+    // ── live pads ──
     function buildPads() {
       padsEl.innerHTML = ''
-      for (const [label, note, channel] of PADS) {
+      for (const [label, note, channel] of DRUMS) {
         const el = document.createElement('div')
         el.className = 'pad'
         el.innerHTML = label + '<small>' + channel + ' · ' + note + '</small>'
-        el.addEventListener('pointerdown', () => hit(el, note, channel))
+        el.addEventListener('pointerdown', () => {
+          if (!device || !ctx) return
+          device.onEvent({ type: 'note', note: note, velocity: 110, duration: 0.1, channel: channel, at: ctx.currentTime })
+          el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 90)
+        })
         padsEl.appendChild(el)
       }
     }
 
-    function hit(el, note, channel) {
-      if (!device || !ctx) return
-      device.onEvent({ type: 'note', note: note, velocity: 110, duration: 0.1, channel: channel, at: ctx.currentTime })
-      el.classList.add('hit')
-      setTimeout(() => el.classList.remove('hit'), 90)
+    // ── lookahead sequencer (host-side WHAT) ──
+    function secondsPerStep() { return 60 / bpm / 4 }
+
+    function scheduleStep(step, when) {
+      for (let r = 0; r < DRUMS.length; r++) {
+        if (pattern[r][step]) {
+          const [, note, channel] = DRUMS[r]
+          device.onEvent({ type: 'note', note: note, velocity: 112, duration: 0.1, channel: channel, at: when })
+        }
+      }
+      // visual playhead (best-effort, main thread)
+      const delayMs = Math.max(0, (when - ctx.currentTime) * 1000)
+      setTimeout(() => setPlayhead(step), delayMs)
     }
 
+    function scheduleAhead() {
+      const LOOKAHEAD = 0.12
+      while (seqNextTime < ctx.currentTime + LOOKAHEAD) {
+        const sw = (seqStep % 2 === 1) ? (swing / 100) * secondsPerStep() * 0.5 : 0
+        scheduleStep(seqStep, seqNextTime + sw)
+        seqNextTime += secondsPerStep()
+        seqStep = (seqStep + 1) % STEPS
+      }
+    }
+
+    function startSeq() {
+      if (!device || !ctx || seqPlaying) return
+      seqPlaying = true
+      seqStep = 0
+      seqNextTime = ctx.currentTime + 0.06
+      seqTimer = setInterval(scheduleAhead, 25)
+      seqPlayBtn.textContent = '⏸ stop sequence'
+    }
+
+    function stopSeq() {
+      seqPlaying = false
+      if (seqTimer) clearInterval(seqTimer)
+      seqTimer = null
+      setPlayhead(-1)
+      seqPlayBtn.textContent = '⏵ play sequence'
+    }
+
+    // ── psy gallop preset: driving 16th kick gallop + offbeat hats ──
+    function psyGallop() {
+      for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false)
+      const kick = DRUMS.findIndex(d => d[2] === 'kick')
+      const hatc = DRUMS.findIndex(d => d[2] === 'hat-closed')
+      const clap = DRUMS.findIndex(d => d[2] === 'clap')
+      // kick: 16th gallop (every step except a few) — classic psy driving
+      for (let s = 0; s < STEPS; s++) pattern[kick][s] = (s % 4 !== 3)
+      pattern[kick][0] = true
+      // offbeat open-ish hats on the off-16ths
+      for (let s = 2; s < STEPS; s += 4) pattern[hatc][s] = true
+      // clap on beat 2 and 4 (steps 4 and 12)
+      pattern[clap][4] = true; pattern[clap][12] = true
+      refreshGrid()
+    }
+
+    function refreshGrid() {
+      const rows = seqEl.querySelectorAll('.seqrow')
+      rows.forEach((row, r) => {
+        const cells = row.querySelectorAll('.cell')
+        cells.forEach((cell, s) => cell.classList.toggle('on', pattern[r][s]))
+      })
+    }
+
+    // ── start audio + device ──
     startBtn.addEventListener('click', async () => {
       if (device) return
       ctx = new AudioContext()
       await ctx.resume()
-
-      // Respect the architecture: the device outputs ONLY to the injected
-      // outputNode (a gain we own), never ctx.destination directly.
       const output = ctx.createGain()
-      output.gain.value = 0.9
+      output.gain.value = 0.85
       output.connect(ctx.destination)
-
-      const result = createDrumDevice({
-        id: 'psydrum-demo',
-        ctx: ctx,
-        outputNode: output,
-        optsSeed: 1,
-      })
-      device = result.device
+      device = createDrumDevice({ id: 'psydrum-demo', ctx: ctx, outputNode: output, optsSeed: 1 }).device
       device.onStart()
       startBtn.textContent = '● running'
       startBtn.disabled = true
     })
 
+    seqPlayBtn.addEventListener('click', () => { seqPlaying ? stopSeq() : startSeq() })
+    bpmRange.addEventListener('input', () => { bpm = Number(bpmRange.value); bpmVal.textContent = bpmRange.value })
+    swingRange.addEventListener('input', () => { swing = Number(swingRange.value); swingVal.textContent = swingRange.value + '%' })
+    clearBtn.addEventListener('click', () => { for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false); refreshGrid() })
+    psyBtn.addEventListener('click', psyGallop)
+
+    buildSeq()
     buildPads()
+    psyGallop() // start with a psy groove loaded
   </script>
 </body>
 </html>
