@@ -47,7 +47,8 @@ var requiredFiles = [
   'tests/psy-drum/midi-map.test.ts',
   'src/psy-drum/device.ts',
   'src/psy-drum/index.ts',
-  'tests/psy-drum/device.test.ts'
+  'tests/psy-drum/device.test.ts',
+  'tests/psy-drum/contract.test.ts'
 ];
 
 var missing: string[] = [];
