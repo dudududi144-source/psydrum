@@ -1,0 +1,13 @@
+{
+  "name": "psydrum",
+  "version": "0.0.0",
+  "description": "PSYDRUM - canonical drum realization device for the PSY family (pure HOW layer)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "bun test",
+    "check": "bun run scripts/check.ts",
+    "bundle": "bun run scripts/build-bundle.ts",
+    "secret-scan": "bun run scripts/secret-scan.ts"
+  }
+}
