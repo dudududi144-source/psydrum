@@ -40,7 +40,9 @@ var requiredFiles = [
   'src/psy-drum/voice-pool.ts',
   'tests/psy-drum/voice-pool.test.ts',
   'src/psy-drum/kit-library.ts',
-  'tests/psy-drum/kit-library.test.ts'
+  'tests/psy-drum/kit-library.test.ts',
+  'src/psy-drum/variance-rules.ts',
+  'tests/psy-drum/variance-rules.test.ts'
 ];
 
 var missing: string[] = [];
