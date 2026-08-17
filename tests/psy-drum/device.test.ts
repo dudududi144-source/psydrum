@@ -73,6 +73,13 @@ function makeMockAudioContext() {
       node.Q = makeParam(1)
       return node
     },
+    createBuffer: (channels: number, length: number, sampleRate: number) => ({
+      getChannelData: () => new Float32Array(length),
+      length: length,
+      sampleRate: sampleRate,
+      numberOfChannels: channels,
+    }),
+    createBufferSource: () => ({ ...makeNode(), buffer: null, start: () => {}, stop: () => {} }),
     _gains: gains,
   }
   return ctx
