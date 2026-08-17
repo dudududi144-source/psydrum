@@ -80,6 +80,7 @@ function makeMockAudioContext() {
       numberOfChannels: channels,
     }),
     createBufferSource: () => ({ ...makeNode(), buffer: null, start: () => {}, stop: () => {} }),
+    createWaveShaper: () => ({ ...makeNode(), curve: null, oversample: 'none' }),
     _gains: gains,
   }
   return ctx
