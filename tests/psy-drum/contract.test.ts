@@ -58,6 +58,7 @@ function makeMockAudioContext() {
       numberOfChannels: channels,
     }),
     createBufferSource: () => ({ ...makeNode(), buffer: null, start: () => {}, stop: () => {} }),
+    createWaveShaper: () => ({ ...makeNode(), curve: null, oversample: 'none' }),
   }
 }
 
