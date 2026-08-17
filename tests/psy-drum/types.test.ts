@@ -68,6 +68,7 @@ describe('drum config and role caps', () => {
     expect(cfg.humanize).toBe(true)
     expect(cfg.choke.hat).toBe('exclusive')
     expect(cfg.choke.crashMaxPoly).toBe(2)
+    expect(cfg.choke.rideMaxPoly).toBe(2)
   })
 
   it('DEFAULT_ROLE_CAPS covers every canonical role with a positive cap', () => {
