@@ -70,6 +70,8 @@
     <button class="action" id="clearBtn">clear</button>
     <button class="action" id="psyBtn">psy gallop preset</button>
     <button class="action" id="samplesBtn">samples: off</button>
+    <button class="action" id="loadKitBtn">load kit JSON</button>
+    <input type="file" id="kitFileInput" accept=".json,application/json" style="display:none">
     <label class="ctl">kit <select id="kitSelect" style="background:rgba(255,255,255,0.06);color:#e8e2ff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px"></select></label>
   </div>
 
@@ -85,7 +87,7 @@
   </p>
 
   <script type="module">
-    import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample } from './psydrum.js'
+    import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, loadKitManifest } from './psydrum.js'
 
     const startBtn = document.getElementById('startBtn')
     const seqPlayBtn = document.getElementById('seqPlayBtn')
@@ -260,6 +262,30 @@
     swingRange.addEventListener('input', () => { swing = Number(swingRange.value); swingVal.textContent = swingRange.value + '%' })
     clearBtn.addEventListener('click', () => { for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false); refreshGrid() })
     psyBtn.addEventListener('click', psyGallop)
+
+    // load kit from a JSON file (validated by loadKitManifest, reject-at-load)
+    const loadKitBtn = document.getElementById('loadKitBtn')
+    const kitFileInput = document.getElementById('kitFileInput')
+    loadKitBtn.addEventListener('click', () => kitFileInput.click())
+    kitFileInput.addEventListener('change', async () => {
+      const file = kitFileInput.files && kitFileInput.files[0]
+      if (!file || !device) return
+      try {
+        const text = await file.text()
+        const parsed = JSON.parse(text)
+        const counters = { kitLoadErrors: 0 }
+        const kits = loadKitManifest(parsed, counters)
+        if (kits.length > 0) {
+          device.loadKit(kits[0])
+          loadKitBtn.textContent = 'kit: ' + kits[0].id
+        } else {
+          loadKitBtn.textContent = 'kit: invalid'
+        }
+      } catch (e) {
+        loadKitBtn.textContent = 'kit: invalid'
+      }
+      kitFileInput.value = ''
+    })
 
     // sample layer toggle: render procedural samples + attach to device
     let samplesOn = false
