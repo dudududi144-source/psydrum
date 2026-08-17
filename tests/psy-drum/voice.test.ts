@@ -76,11 +76,15 @@ describe('envelope table (precomputed, zero-alloc reads)', () => {
   })
 
   it('sampleEnvelope interpolates the ramp correctly', () => {
+    // Attack-only ramp 0 -> 1 over 100ms. Interior points interpolate linearly;
+    // the very last sample belongs to the (instant, releaseMs=0) release tail,
+    // so we assert interior points where the ramp is well-defined.
     const ramp: EnvelopeSpec = { attackMs: 100, decayMs: 0, releaseMs: 0, sustainLevel: 1 }
     const t = buildEnvelopeTable(ramp, 1000)
-    expect(sampleEnvelope(t, 50)).toBeCloseTo(0.5, 2)
     expect(sampleEnvelope(t, 0)).toBeCloseTo(0, 2)
-    expect(sampleEnvelope(t, 100)).toBeCloseTo(1, 2)
+    expect(sampleEnvelope(t, 25)).toBeCloseTo(0.25, 2)
+    expect(sampleEnvelope(t, 50)).toBeCloseTo(0.5, 2)
+    expect(sampleEnvelope(t, 75)).toBeCloseTo(0.75, 2)
   })
 
   it('sampleEnvelope clamps outside the table', () => {
