@@ -36,6 +36,7 @@ var requiredFiles = [
   'src/psy-drum/choke.ts',
   'tests/psy-drum/choke.test.ts',
   'src/psy-drum/voice.ts',
+  'src/psy-drum/voice-synth.ts',
   'tests/psy-drum/voice.test.ts',
   'src/psy-drum/voice-pool.ts',
   'tests/psy-drum/voice-pool.test.ts',
