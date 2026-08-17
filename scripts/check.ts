@@ -38,7 +38,9 @@ var requiredFiles = [
   'src/psy-drum/voice.ts',
   'tests/psy-drum/voice.test.ts',
   'src/psy-drum/voice-pool.ts',
-  'tests/psy-drum/voice-pool.test.ts'
+  'tests/psy-drum/voice-pool.test.ts',
+  'src/psy-drum/kit-library.ts',
+  'tests/psy-drum/kit-library.test.ts'
 ];
 
 var missing: string[] = [];
