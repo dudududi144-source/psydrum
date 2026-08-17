@@ -44,3 +44,5 @@ export type { DrumDeviceOptions } from './device'
 export type { KitManifest, KitDefinition } from './kit-library'
 export { DRUM_ROLES } from './types'
 export type { DrumRole, DrumPatch, DrumConfig } from './types'
+
+export { DEFAULT_PSY_KIT } from './default-kit'
