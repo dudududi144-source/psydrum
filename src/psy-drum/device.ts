@@ -60,6 +60,8 @@ import { createVarianceSource } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
+import { synthDrum, makeNoiseBuffer } from './voice-synth'
+import type { SynthCtx } from './voice-synth'
 
 // Suspend-safety: voices fast-release over this window on onStop (section 4.5).
 export const STOP_FAST_RELEASE_MS = 10
@@ -93,6 +95,7 @@ export class DrumDevice implements PsyDevice {
   private transport: MusicalTransport | null
   private context: MusicalContext | null
   private started: boolean
+  private noiseBuffer: AudioBuffer | null
 
   constructor(opts: DrumDeviceOptions) {
     this.id = opts.id === undefined ? 'psydrum' : opts.id
@@ -111,6 +114,7 @@ export class DrumDevice implements PsyDevice {
     this.transport = null
     this.context = null
     this.started = false
+    this.noiseBuffer = null
   }
 
   capabilities(): DeviceCapabilities {
@@ -176,6 +180,9 @@ export class DrumDevice implements PsyDevice {
     this.deviceOut = this.ctx.createGain()
     this.deviceOut.gain.value = 1
     this.deviceOut.connect(this.outputNode)
+
+    // Deterministic seeded noise buffer shared by all noise-based drums.
+    this.noiseBuffer = makeNoiseBuffer(this.ctx, 1.0, 0x9e3779b9)
 
     for (var i = 0; i < DRUM_ROLES.length; i++) {
       var role = DRUM_ROLES[i]
