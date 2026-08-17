@@ -41,6 +41,7 @@ export function createDrumDevice(opts: DrumDeviceOptions): CreateDrumDeviceResul
 
 export { DrumDevice } from './device'
 export type { DrumDeviceOptions } from './device'
+export { loadKitManifest } from './kit-library'
 export type { KitManifest, KitDefinition } from './kit-library'
 export { DRUM_ROLES } from './types'
 export type { DrumRole, DrumPatch, DrumConfig } from './types'
