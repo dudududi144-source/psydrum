@@ -77,7 +77,7 @@
   </p>
 
   <script type="module">
-    import { createDrumDevice } from './psydrum.js'
+    import { createDrumDevice, DEFAULT_PSY_KIT } from './psydrum.js'
 
     const startBtn = document.getElementById('startBtn')
     const seqPlayBtn = document.getElementById('seqPlayBtn')
@@ -241,7 +241,7 @@
       const output = ctx.createGain()
       output.gain.value = 0.85
       output.connect(ctx.destination)
-      device = createDrumDevice({ id: 'psydrum-demo', ctx: ctx, outputNode: output, optsSeed: 1 }).device
+      device = createDrumDevice({ id: 'psydrum-demo', ctx: ctx, outputNode: output, optsSeed: 1, kitPatches: DEFAULT_PSY_KIT }).device
       device.onStart()
       startBtn.textContent = '● running'
       startBtn.disabled = true
