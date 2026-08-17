@@ -12,6 +12,7 @@ export const DEFAULT_PSY_KIT: Record<DrumRole, DrumPatch> = {
     body: { wave: 'sine', startHz: 168, endHz: 44, pitchDecayMs: 42 },
     amp: { attackMs: 1, decayMs: 218, releaseMs: 50 },
     filter: { cutoff: 950, res: 1 },
+    driveDb: 3.5,
     velTrack: 0.5,
   },
   snare: {
@@ -19,6 +20,7 @@ export const DEFAULT_PSY_KIT: Record<DrumRole, DrumPatch> = {
     noise: { mix: 0.9, bpHz: 1850 },
     amp: { attackMs: 1, decayMs: 150, releaseMs: 40 },
     filter: { cutoff: 4600, res: 1 },
+    driveDb: 2.0,
     velTrack: 0.6,
   },
   clap: {
