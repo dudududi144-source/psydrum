@@ -1,96 +1,116 @@
-// PSYDRUM note router (phase 3, contract layer, ARCHITECTURE.md section 3.3).
+// PSYDRUM note router (phase 3, ARCHITECTURE.md section 3.3).
 //
-// note-router turns canonical NoteEvents into voice on/off/drop decisions. It is
-// the B1 enforcement point: UNPITCHED drums IGNORE NoteEvent.note for pitch — no
-// nullish-coalescing pitch fallback, no coercion, no guessing. The audit-b1 test
-// statically guarantees that anti-pattern never appears in src/.
+// Turns a canonical NoteEvent into a voice on/off/choke DECISION. This is the
+// contract layer: pure routing, no audio, no allocation-heavy work. The voice
+// pool (phase 6) executes the decision.
 //
-// The routing table (channel -> role) is injected as data; the router only looks
-// up, never invents (ground rule 1: the device is pure HOW, channel content is
-// WHAT and arrives from the host).
+// THE B1 FIX (non-negotiable): unpitched drums IGNORE NoteEvent.note for pitch.
+// There is NO default-pitch fallback here or anywhere in the device. The
+// anti-B1 static test (tests/psy-drum/no-pitch-fallback.test.ts) greps the
+// sources and fails the build if a null-coalesce pitch fallback ever appears.
 
 import type { NoteEvent } from '../psy-foundation-shim/protocol'
-import { DRUM_ROLES, isPitchedRole } from './types'
 import type { DrumRole } from './types'
+import { isDrumRole, isPitchedRole } from './types'
 import type { DropReason } from './counters'
 
-// channel -> drum role. Built from the kit manifest at load time (phase 6);
-// the router only ever reads it.
-export type RoutingTable = ReadonlyMap<string, DrumRole>
-
-// Canonical table: every canonical role routes to itself. Used by tests and as
-// the default before a kit manifest overrides it.
-export function canonicalRoutingTable(): RoutingTable {
-  var table = new Map<string, DrumRole>()
-  for (const role of DRUM_ROLES) {
-    table.set(role, role)
-  }
-  return table
-}
-
-// Events scheduled more than this far in the past (relative to ctx.currentTime)
-// are stale-dropped (family stale-drop policy).
-export var STALE_WINDOW_MS = 50
+// ─── Decisions ───────────────────────────────────────────────────────────────
 
 export type RouteDecision =
-  | {
-      type: 'on'
-      role: DrumRole
-      channel: string
-      pitched: boolean
-      pitch: number | null
-      velocity: number
-      at: number
-    }
-  | { type: 'off'; role: DrumRole; channel: string; at: number }
-  | { type: 'drop'; reason: DropReason }
+  | { kind: 'trigger'; role: DrumRole; velocity: number; pitch: number | null }
+  | { kind: 'note-off'; role: DrumRole; channel: string }
+  | { kind: 'drop'; reason: DropReason }
 
-export function routeNote(event: NoteEvent, now: number, table: RoutingTable): RouteDecision {
-  var role = table.get(event.channel)
+export interface RouteContext {
+  // Current AudioContext time (seconds), for the stale check.
+  nowSec: number
+  // Events older than this window are dropped as stale (ARCHITECTURE.md 3.3).
+  staleWindowSec: number
+  // Maps a NoteEvent.channel to a drum role, or null if unroutable.
+  resolveChannel: (channel: string) => DrumRole | null
+}
 
-  // Unknown channel: DROP. Never coerce, never guess (audit B2).
-  if (role === undefined) {
-    return { type: 'drop', reason: 'unknown-channel' }
+// ─── Constants (architecture-mandated) ───────────────────────────────────────
+
+export const STALE_WINDOW_SEC = 0.05 // 50 ms
+export const MIN_NOTE = 0
+export const MAX_NOTE = 127
+export const MIN_VELOCITY = 0
+export const MAX_VELOCITY = 127
+
+// ─── Routing table ───────────────────────────────────────────────────────────
+
+// Default channel->role map: each canonical role is reachable under its own
+// name. A host (DrumBridge) may supply its own table to rename channels.
+export const DEFAULT_ROUTING_TABLE: Readonly<Record<DrumRole, DrumRole>> = {
+  kick: 'kick',
+  snare: 'snare',
+  clap: 'clap',
+  'hat-closed': 'hat-closed',
+  'hat-open': 'hat-open',
+  tom: 'tom',
+  perc: 'perc',
+  ride: 'ride',
+  crash: 'crash',
+}
+
+export function resolveRole(
+  table: Readonly<Record<string, DrumRole>>,
+  channel: string,
+): DrumRole | null {
+  const role = table[channel]
+  if (role === undefined) return null
+  return isDrumRole(role) ? role : null
+}
+
+export function makeChannelResolver(
+  table: Readonly<Record<string, DrumRole>>,
+): (channel: string) => DrumRole | null {
+  return function (channel: string): DrumRole | null {
+    return resolveRole(table, channel)
+  }
+}
+
+// ─── Router ──────────────────────────────────────────────────────────────────
+
+// Validation order is deliberate and documented:
+//   1. channel -> role          (unknown-channel drop)
+//   2. note within 0..127       (invalid-event drop)
+//   3. velocity within 0..127   (invalid-event drop)
+//   4. staleness                (stale drop)
+//   5. velocity === 0           -> note-off
+//   6. velocity  > 0            -> trigger
+export function routeNoteEvent(event: NoteEvent, ctx: RouteContext): RouteDecision {
+  const role = ctx.resolveChannel(event.channel)
+  if (role === null) {
+    return { kind: 'drop', reason: 'unknown-channel' }
   }
 
-  // Stale event: scheduled more than STALE_WINDOW_MS in the past.
-  var staleCutoff = now - STALE_WINDOW_MS / 1000
-  if (event.at < staleCutoff) {
-    return { type: 'drop', reason: 'stale' }
+  if (!Number.isFinite(event.note) || event.note < MIN_NOTE || event.note > MAX_NOTE) {
+    return { kind: 'drop', reason: 'invalid-event' }
   }
 
-  // velocity == 0: note-off. The matching voice is found later via the (channel)
-  // LRU active-voice index (O(1)); that lookup lives in the voice pool.
-  if (event.velocity <= 0) {
-    return { type: 'off', role: role, channel: event.channel, at: event.at }
+  if (
+    !Number.isFinite(event.velocity) ||
+    event.velocity < MIN_VELOCITY ||
+    event.velocity > MAX_VELOCITY
+  ) {
+    return { kind: 'drop', reason: 'invalid-event' }
   }
 
-  // velocity > 0, pitched drum (tom/ride): carry a validated pitch hint.
-  if (isPitchedRole(role)) {
-    var pitch = event.note
-    if (!Number.isFinite(pitch) || pitch < 0 || pitch > 127) {
-      return { type: 'drop', reason: 'invalid-event' }
-    }
-    return {
-      type: 'on',
-      role: role,
-      channel: event.channel,
-      pitched: true,
-      pitch: pitch,
-      velocity: event.velocity,
-      at: event.at,
-    }
+  const window = ctx.staleWindowSec >= 0 ? ctx.staleWindowSec : STALE_WINDOW_SEC
+  if (Number.isFinite(event.at) && event.at < ctx.nowSec - window) {
+    return { kind: 'drop', reason: 'stale' }
   }
 
-  // velocity > 0, unpitched drum: one-shot. note is IGNORED for pitch (the B1
-  // fix) — pitch stays null; there is no fallback to a default pitch.
-  return {
-    type: 'on',
-    role: role,
-    channel: event.channel,
-    pitched: false,
-    pitch: null,
-    velocity: event.velocity,
-    at: event.at,
+  if (event.velocity === 0) {
+    return { kind: 'note-off', role: role, channel: event.channel }
   }
+
+  // Pitch semantics (the B1 fix): pitched drums (tom/ride) carry an OPTIONAL
+  // pitch hint taken from the note; every unpitched drum reports pitch=null and
+  // the note is NOT used for pitch — no fallback to a default pitch.
+  const pitch = isPitchedRole(role) ? Math.round(event.note) : null
+
+  return { kind: 'trigger', role: role, velocity: event.velocity, pitch: pitch }
 }
