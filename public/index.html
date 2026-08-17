@@ -113,7 +113,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -304,8 +304,13 @@ body {
       for(const[label,note,channel]of DRUMS){
         let buf
         if(channel==='kick'){
-          // per-sample psy kick DSP (FM click + saturation + sharp pitch drop)
           buf=renderPsyKickInto(ctx,{startHz:168,endHz:44,pitchDecayMs:42,clickMs:2,driveDb:3.5,sampleRate:ctx.sampleRate,durationSec:0.25})
+        }else if(channel==='snare'){
+          buf=renderSnareInto(ctx,{toneHz:190,noiseBpHz:1800,driveDb:2,sampleRate:ctx.sampleRate,durationSec:0.18})
+        }else if(channel==='hat-closed'){
+          buf=renderHatInto(ctx,{hpHz:7000,decayMs:42,driveDb:1,sampleRate:ctx.sampleRate,durationSec:0.1})
+        }else if(channel==='hat-open'){
+          buf=renderHatInto(ctx,{hpHz:6400,decayMs:330,driveDb:1,sampleRate:ctx.sampleRate,durationSec:0.4})
         }else{
           const dur=(channel==='crash'||channel==='ride')?0.5:0.25
           buf=await renderDrumSample(channel,ctx.sampleRate,dur)
