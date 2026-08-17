@@ -39,6 +39,7 @@ var requiredFiles = [
   'src/psy-drum/voice-synth.ts',
   'src/psy-drum/default-kit.ts',
   'src/psy-drum/kit-builtin.ts',
+  'src/psy-drum/sample-gen.ts',
   'tests/psy-drum/default-kit.test.ts',
   'tests/psy-drum/kit-builtin.test.ts',
   'tests/psy-drum/voice-synth.test.ts',
