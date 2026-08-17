@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 
 // PSYDRUM structure gate: every required file must exist.
-// Phase 0 scaffold + phase 1 foundation shim + phase 2 core types/counters/latency; grows as phases land.
+// Phase 0 scaffold + phase 1 shim + phase 2 core types/counters/latency + phase 3 note-router/audit-B1; grows as phases land.
 
 var requiredFiles = [
   'README.md',
@@ -29,7 +29,10 @@ var requiredFiles = [
   'src/psy-drum/latency.ts',
   'tests/psy-drum/types.test.ts',
   'tests/psy-drum/counters.test.ts',
-  'tests/psy-drum/latency.test.ts'
+  'tests/psy-drum/latency.test.ts',
+  'src/psy-drum/note-router.ts',
+  'tests/psy-drum/note-router.test.ts',
+  'tests/psy-drum/audit-b1.test.ts'
 ];
 
 var missing: string[] = [];
