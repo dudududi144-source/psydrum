@@ -43,6 +43,8 @@ export function renderSnareSamples(p: SnareParams): Float32Array {
     const decay = Math.exp(-t / 0.09)
     let sig = (tone * 0.45 + bpNoise * 0.55) * attack * decay
     sig = Math.tanh(sig * drive) / Math.tanh(drive)
+    if (sig > 1) sig = 1
+    if (sig < -1) sig = -1
     out[i] = sig
   }
   return out
