@@ -67,6 +67,8 @@
     <button class="action" id="seqPlayBtn">⏵ play sequence</button>
     <label class="ctl">BPM <input type="range" id="bpmRange" min="90" max="160" value="138"><span id="bpmVal">138</span></label>
     <label class="ctl">swing <input type="range" id="swingRange" min="0" max="60" value="0"><span id="swingVal">0%</span></label>
+    <label class="ctl">delay <input type="range" id="delaySendRange" min="0" max="100" value="0"><span id="delaySendVal">0%</span></label>
+    <label class="ctl">reverb <input type="range" id="reverbSendRange" min="0" max="100" value="0"><span id="reverbSendVal">0%</span></label>
     <button class="action" id="clearBtn">clear</button>
     <button class="action" id="psyBtn">psy gallop preset</button>
     <button class="action" id="samplesBtn">samples: off</button>
@@ -318,6 +320,20 @@
         samplesLoaded = true
       }
       samplesBtn.textContent = 'samples: ' + (samplesOn ? 'on' : 'off')
+    })
+
+    // FX sends (step J): apply the same delay/reverb send level to all drums
+    const delaySendRange = document.getElementById('delaySendRange')
+    const delaySendVal = document.getElementById('delaySendVal')
+    const reverbSendRange = document.getElementById('reverbSendRange')
+    const reverbSendVal = document.getElementById('reverbSendVal')
+    delaySendRange.addEventListener('input', () => {
+      delaySendVal.textContent = delaySendRange.value + '%'
+      if (device) for (const [, , channel] of DRUMS) device.setDrumDelaySend(channel, Number(delaySendRange.value) / 100)
+    })
+    reverbSendRange.addEventListener('input', () => {
+      reverbSendVal.textContent = reverbSendRange.value + '%'
+      if (device) for (const [, , channel] of DRUMS) device.setDrumReverbSend(channel, Number(reverbSendRange.value) / 100)
     })
 
     // mixer: one vertical level slider per drum
