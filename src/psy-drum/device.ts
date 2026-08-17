@@ -96,6 +96,7 @@ export class DrumDevice implements PsyDevice {
   private context: MusicalContext | null
   private started: boolean
   private noiseBuffer: AudioBuffer | null
+  private samples: Partial<Record<DrumRole, AudioBuffer>>
 
   constructor(opts: DrumDeviceOptions) {
     this.id = opts.id === undefined ? 'psydrum' : opts.id
@@ -115,6 +116,7 @@ export class DrumDevice implements PsyDevice {
     this.context = null
     this.started = false
     this.noiseBuffer = null
+    this.samples = {}
   }
 
   capabilities(): DeviceCapabilities {
@@ -205,6 +207,13 @@ export class DrumDevice implements PsyDevice {
   getDrumLevel(role: DrumRole): number {
     var bus = this.buses[role]
     return bus === undefined ? 1 : bus.gain.value
+  }
+
+  // Sample layer (step H): attach a pre-loaded AudioBuffer to a drum role.
+  // Samples are loaded by the host at load time (provenance enforced there);
+  // the device only realizes them.
+  setSample(role: DrumRole, buffer: AudioBuffer): void {
+    this.samples[role] = buffer
   }
 
   onStop(): void {
@@ -321,6 +330,7 @@ export class DrumDevice implements PsyDevice {
       params: params,
       patch: patch === undefined ? {} : patch,
       duration: dur,
+      sample: this.samples[role] === undefined ? null : this.samples[role],
     }
     // `pitch` is a pitch hint for pitched drums (tom/ride); unpitched ignore it (B1).
     void pitch
