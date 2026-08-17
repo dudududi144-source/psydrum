@@ -46,3 +46,5 @@ export { DRUM_ROLES } from './types'
 export type { DrumRole, DrumPatch, DrumConfig } from './types'
 
 export { DEFAULT_PSY_KIT } from './default-kit'
+
+export { BUILTIN_KIT_MANIFEST } from './kit-builtin'
