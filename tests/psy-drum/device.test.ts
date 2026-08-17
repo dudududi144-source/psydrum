@@ -250,3 +250,25 @@ describe('sample layer (step H)', () => {
     expect(() => device.onEvent(noteEvent(36, 100, 'kick'))).not.toThrow()
   })
 })
+
+describe('FX sends (step J)', () => {
+  it('setDrumDelaySend/setDrumReverbSend do not throw after onStart', () => {
+    const { device } = makeDevice()
+    device.onStart()
+    expect(() => device.setDrumDelaySend('kick', 0.5)).not.toThrow()
+    expect(() => device.setDrumReverbSend('snare', 0.4)).not.toThrow()
+  })
+
+  it('FX sends clamp to 0..1.5', () => {
+    const { device } = makeDevice()
+    device.onStart()
+    expect(() => device.setDrumDelaySend('kick', 99)).not.toThrow()
+    expect(() => device.setDrumReverbSend('kick', -5)).not.toThrow()
+  })
+
+  it('FX sends before onStart are safe no-ops', () => {
+    const { device } = makeDevice()
+    expect(() => device.setDrumDelaySend('kick', 0.5)).not.toThrow()
+    expect(() => device.setDrumReverbSend('kick', 0.5)).not.toThrow()
+  })
+})
