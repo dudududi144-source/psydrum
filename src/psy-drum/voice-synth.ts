@@ -21,23 +21,6 @@ export interface SynthCtx {
   duration: number // seconds the voice is allowed to ring
 }
 
-// Build a deterministic noise buffer (seeded LCG, NOT Math.random).
-export function buildNoiseBuffer(sampleRate: number, seconds: number, seed: number): AudioBuffer {
-  const len = Math.max(1, Math.floor(sampleRate * seconds))
-  // We need a context to allocate the buffer; callers pass one in. This helper
-  // only fills data deterministically so it is kept pure over a Float32Array.
-  const data = new Float32Array(len)
-  let s = seed >>> 0
-  for (let i = 0; i < len; i++) {
-    // xorshift32 — fast, deterministic, good-enough whitish noise
-    s ^= s << 13
-    s ^= s >>> 17
-    s ^= s << 5
-    data[i] = ((s >>> 0) / 4294967296) * 2 - 1
-  }
-  return data as unknown as AudioBuffer // replaced by a real buffer in makeNoiseBuffer
-}
-
 // Create a real AudioBuffer on the given context and fill it deterministically.
 export function makeNoiseBuffer(ctx: BaseAudioContext, seconds: number, seed: number): AudioBuffer {
   const len = Math.max(1, Math.floor(ctx.sampleRate * seconds))
