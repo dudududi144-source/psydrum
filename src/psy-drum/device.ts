@@ -195,12 +195,39 @@ export class DrumDevice implements PsyDevice {
     // Deterministic seeded noise buffer shared by all noise-based drums.
     this.noiseBuffer = makeNoiseBuffer(this.ctx, 1.0, 0x9e3779b9)
 
+    // FX send buses (step J): delay w/ feedback + reverb w/ procedural IR.
+    var delay = this.ctx.createDelay(1.0)
+    delay.delayTime.value = 0.28
+    var fb = this.ctx.createGain()
+    fb.gain.value = 0.35
+    delay.connect(fb)
+    fb.connect(delay)
+    delay.connect(this.deviceOut)
+    this.delayBus = delay
+
+    var reverb = this.ctx.createConvolver()
+    reverb.buffer = makeReverbIR(this.ctx, 1.6, 2.2, 0x5f3759df)
+    reverb.connect(this.deviceOut)
+    this.reverbBus = reverb
+
     for (var i = 0; i < DRUM_ROLES.length; i++) {
       var role = DRUM_ROLES[i]
       var bus = this.ctx.createGain()
       bus.gain.value = 1
       bus.connect(this.deviceOut)
       this.buses[role] = bus
+
+      var ds = this.ctx.createGain()
+      ds.gain.value = 0
+      bus.connect(ds)
+      ds.connect(delay)
+      this.delaySends[role] = ds
+
+      var rs = this.ctx.createGain()
+      rs.gain.value = 0
+      bus.connect(rs)
+      rs.connect(reverb)
+      this.reverbSends[role] = rs
     }
   }
 
@@ -234,6 +261,19 @@ export class DrumDevice implements PsyDevice {
       this.patches[role] = patch
     }
     patch.sample = { assetId: null, gain: Math.max(0, Math.min(1, gain)) }
+  }
+
+  // FX sends (step J): per-drum delay / reverb send level (0..1.5).
+  setDrumDelaySend(role: DrumRole, level: number): void {
+    var send = this.delaySends[role]
+    if (send === undefined) return
+    send.gain.value = Math.max(0, Math.min(1.5, level))
+  }
+
+  setDrumReverbSend(role: DrumRole, level: number): void {
+    var send = this.reverbSends[role]
+    if (send === undefined) return
+    send.gain.value = Math.max(0, Math.min(1.5, level))
   }
 
   onStop(): void {
