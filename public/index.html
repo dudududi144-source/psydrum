@@ -71,6 +71,7 @@
     <label class="ctl">reverb <input type="range" id="reverbSendRange" min="0" max="100" value="0"><span id="reverbSendVal">0%</span></label>
     <button class="action" id="clearBtn">clear</button>
     <button class="action" id="psyBtn">psy gallop preset</button>
+    <label class="ctl">groove <select id="grooveSelect" style="background:rgba(255,255,255,0.06);color:#e8e2ff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px"></select></label>
     <button class="action" id="samplesBtn">samples: off</button>
     <button class="action" id="loadKitBtn">load kit JSON</button>
     <button class="action" id="exportKitBtn">export kit JSON</button>
@@ -90,7 +91,7 @@
   </p>
 
   <script type="module">
-    import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, loadKitManifest } from './psydrum.js'
+    import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
 
     const startBtn = document.getElementById('startBtn')
     const seqPlayBtn = document.getElementById('seqPlayBtn')
@@ -353,6 +354,28 @@
       strip.appendChild(lab)
       strip.appendChild(rng)
       mixerEl.appendChild(strip)
+    })
+
+    // groove template selector: apply a ready-made groove to the sequencer
+    const grooveSelect = document.getElementById('grooveSelect')
+    GROOVE_TEMPLATES.forEach((g, i) => {
+      const opt = document.createElement('option')
+      opt.value = String(i)
+      opt.textContent = g.label
+      grooveSelect.appendChild(opt)
+    })
+    grooveSelect.addEventListener('change', () => {
+      const g = GROOVE_TEMPLATES[Number(grooveSelect.value)]
+      if (!g) return
+      for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false)
+      for (const [label, note, channel] of DRUMS) {
+        const pat = g.patterns[channel]
+        if (!pat) continue
+        const ridx = DRUMS.findIndex(d => d[2] === channel)
+        const steps = parsePattern(pat)
+        for (let s = 0; s < steps.length; s++) pattern[ridx][s] = steps[s]
+      }
+      refreshGrid()
     })
 
     // populate kit selector from the built-in manifest
