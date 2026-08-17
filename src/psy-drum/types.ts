@@ -57,6 +57,7 @@ export interface ChokeGroup {
 export interface KitChokeConfig {
   hat: 'exclusive' | 'none'
   crashMaxPoly: number
+  rideMaxPoly: number
 }
 
 // ─── Patches (analog-modeled synthesis parameters, ARCHITECTURE-STYLE.md) ───
@@ -128,7 +129,7 @@ export function defaultDrumConfig(): DrumConfig {
     voices: 16,
     seed: 1,
     humanize: true,
-    choke: { hat: 'exclusive', crashMaxPoly: 2 },
+    choke: { hat: 'exclusive', crashMaxPoly: 2, rideMaxPoly: 2 },
   }
 }
 
