@@ -17,6 +17,7 @@ export interface SynthCtx {
   params: ResolvedDrumParams
   patch: DrumPatch
   duration: number // seconds the voice is allowed to ring
+  sample: AudioBuffer | null // optional per-drum sample layer (step H)
 }
 
 // Create a real AudioBuffer on the given context and fill it deterministically.
@@ -32,6 +33,31 @@ export function makeNoiseBuffer(ctx: BaseAudioContext, seconds: number, seed: nu
     data[i] = ((s >>> 0) / 4294967296) * 2 - 1
   }
   return buf
+}
+
+// ─── sample layer (step H): blend an optional sample under the synthesis ──
+
+// Play the per-drum sample (if any) blended under the synthesis using
+// patch.sample.gain as the sample-vs-synthesis crossfade weight.
+export function playSampleLayer(sc: SynthCtx): void {
+  const { ctx, sample, bus, now, params, patch, duration } = sc
+  if (sample === null) return
+  const sref = patch.sample
+  if (sref === undefined || !(sref.gain > 0)) return
+
+  const src = ctx.createBufferSource()
+  src.buffer = sample
+
+  const g = ctx.createGain()
+  // sample.gain crossfades sample vs synthesis; scale by overall velocity gain.
+  g.gain.setValueAtTime(0.0001, now)
+  g.gain.linearRampToValueAtTime(params.gain * sref.gain, now + 0.003)
+  g.gain.exponentialRampToValueAtTime(0.001, now + Math.max(0.05, duration))
+
+  src.connect(g)
+  g.connect(bus)
+  src.start(now)
+  src.stop(now + duration + 0.05)
 }
 
 // ─── drive / saturation (the psy punch, patch-driven) ───────────────────────
@@ -183,6 +209,8 @@ export function buildCrash(sc: SynthCtx): void {
 
 // Dispatch by role (called by device.ts).
 export function synthDrum(role: DrumRole, sc: SynthCtx): void {
+  // Optional sample layer blended under the synthesis (step H).
+  playSampleLayer(sc)
   switch (role) {
     case 'kick':
       buildKick(sc)
