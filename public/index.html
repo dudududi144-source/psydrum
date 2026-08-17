@@ -47,6 +47,10 @@
     }
     .pad small { display: block; font-weight: 400; opacity: 0.55; margin-top: 3px; }
     .pad.hit { transform: scale(0.96); background: rgba(179,136,255,0.28); }
+    .mixer { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; width: min(760px, 96vw); }
+    .mstrip { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .mstrip .mlabel { font-size: 10px; opacity: 0.6; }
+    .mstrip input[type=range] { writing-mode: vertical-lr; direction: rtl; height: 74px; width: 18px; }
     .note { opacity: 0.55; font-size: 13px; }
     a { color: #b388ff; }
   </style>
@@ -71,6 +75,8 @@
   <div class="seq" id="seq"></div>
 
   <div class="pads" id="pads"></div>
+
+  <div class="mixer" id="mixer"></div>
 
   <p class="note">
     Source: <a href="https://github.com/dudududi144-source/psydrum">dudududi144-source/psydrum</a>
@@ -253,6 +259,25 @@
     swingRange.addEventListener('input', () => { swing = Number(swingRange.value); swingVal.textContent = swingRange.value + '%' })
     clearBtn.addEventListener('click', () => { for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false); refreshGrid() })
     psyBtn.addEventListener('click', psyGallop)
+
+    // mixer: one vertical level slider per drum
+    const mixerEl = document.getElementById('mixer')
+    DRUMS.forEach(([label, note, channel]) => {
+      const strip = document.createElement('div')
+      strip.className = 'mstrip'
+      const lab = document.createElement('div')
+      lab.className = 'mlabel'
+      lab.textContent = label
+      const rng = document.createElement('input')
+      rng.type = 'range'
+      rng.min = '0'; rng.max = '150'; rng.value = '100'
+      rng.addEventListener('input', () => {
+        if (device) device.setDrumLevel(channel, Number(rng.value) / 100)
+      })
+      strip.appendChild(lab)
+      strip.appendChild(rng)
+      mixerEl.appendChild(strip)
+    })
 
     // populate kit selector from the built-in manifest
     const kitSelect = document.getElementById('kitSelect')
