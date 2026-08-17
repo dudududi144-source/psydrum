@@ -53,3 +53,6 @@ export { BUILTIN_KIT_MANIFEST } from './kit-builtin'
 export { renderDrumSample } from './sample-gen'
 
 export { makeReverbIR } from './fx'
+
+export { GROOVE_TEMPLATES, parsePattern, findGroove } from './grooves'
+export type { GrooveTemplate } from './grooves'
