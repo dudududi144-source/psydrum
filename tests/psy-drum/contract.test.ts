@@ -51,6 +51,13 @@ function makeMockAudioContext() {
       frequency: makeParam(1000),
       Q: makeParam(1),
     }),
+    createBuffer: (channels: number, length: number, sampleRate: number) => ({
+      getChannelData: () => new Float32Array(length),
+      length: length,
+      sampleRate: sampleRate,
+      numberOfChannels: channels,
+    }),
+    createBufferSource: () => ({ ...makeNode(), buffer: null, start: () => {}, stop: () => {} }),
   }
 }
 
