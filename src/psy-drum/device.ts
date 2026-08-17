@@ -31,8 +31,9 @@ import type {
 import type { MusicalTransport } from '../psy-foundation-shim/transport'
 import type { PsyDevice } from '../psy-foundation-shim/device'
 
-import type { DrumConfig, DrumPatch, DrumRole, KitDefinition } from './types'
+import type { DrumConfig, DrumPatch, DrumRole } from './types'
 import { DRUM_ROLES, defaultDrumConfig, isDrumRole } from './types'
+import type { KitDefinition } from './kit-library'
 import { createCounters } from './counters'
 import type { DrumCounters } from './counters'
 import { createLatencyState, recordBaseLatency, reportLatencyMs } from './latency'
