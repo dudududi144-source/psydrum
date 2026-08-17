@@ -144,7 +144,7 @@ The drums do NOT own delay/reverb/ducking. Conventions with the host:
             "...": "..."
           },
           "humanize": true,
-          "choke": { "hat": "exclusive", "crashMaxPoly": 2 }
+          "choke": { "hat": "exclusive", "crashMaxPoly": 2, "rideMaxPoly": 2 }
         }
       ]
     }
