@@ -113,6 +113,7 @@ export function renderKick(out: Float32Array, opts: VoiceRenderOpts): void {
 
   let phase = 0
   let noiseState = (opts.seed >>> 0) || 1
+  let clickLP = 0
 
   for (var n = 0; n < out.length; n++) {
     const t = n / sr
@@ -123,10 +124,15 @@ export function renderKick(out: Float32Array, opts: VoiceRenderOpts): void {
     const body = Math.sin(phase) * expDecay(t / bodyDecaySec)
 
     noiseState = lcgStep(noiseState)
+    const noise = lcgToNoise(noiseState)
+    // One-pole high-pass: the click is clearly high-frequency, so velocity-to-
+    // timbre (bright) measurably raises the spectral centroid (style 9).
+    clickLP = clickLP + 0.3 * (noise - clickLP)
+    const clickHP = noise - clickLP
     const clickEnv = t < clickSec ? 1 - t / clickSec : 0
-    const click = lcgToNoise(noiseState) * clickEnv * 0.5 * bright
+    const click = clickHP * clickEnv * bright
 
-    out[n] = body * gain * 0.9 + click * gain * 0.4
+    out[n] = body * gain * 0.9 + click * gain * 0.5
   }
 }
 
