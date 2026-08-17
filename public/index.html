@@ -274,7 +274,7 @@
           const dur = (channel === 'crash' || channel === 'ride') ? 0.5 : 0.25
           const buf = await renderDrumSample(channel, ctx.sampleRate, dur)
           device.setSample(channel, buf)
-          // enable the sample layer in the patch for this drum
+          device.enableSampleLayer(channel, 0.45) // blend sample under the synthesis
         }
         samplesLoaded = true
       }
