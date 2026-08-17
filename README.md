@@ -2,7 +2,7 @@
 
 **PSY Drum Device** — the canonical drum realization device for the PSY family. Pure HOW layer, third concrete sound-producing device (after `psy-sampler` and `psysynth`). Analog-modeled drum synthesis, drum-specific organization (choke groups, kits, groove rendering), MIDI-capable, deterministic, psytrance-grade.
 
-> **Status: BUILDING — phase 9 landed.** Phases 0–9 are green: scaffold, verbatim foundation shim, canonical types/counters/latency, B1-enforcing note-router + audit-B1 hard gate, choke groups, voice DSP core, voice pool, kit library, variance rules (determinism), and MIDI map + learn. Next: phase 10 (device assembly + factory). Read `ARCHITECTURE.md` first, then `ARCHITECTURE-STYLE.md`, then `PSY-DRUM-IMPLEMENTATION-PLAN.md` (the phased plan; every phase ends green).
+> **Status: BUILDING — phase 10 landed.** Phases 0–10 are green: everything through MIDI map + learn, plus the assembled `DrumDevice` + `createDrumDevice` factory (contract + suspend-safety tested). Next: phase 11 (contract + shim-sync tests). Read `ARCHITECTURE.md` first, then `ARCHITECTURE-STYLE.md`, then `PSY-DRUM-IMPLEMENTATION-PLAN.md` (the phased plan; every phase ends green).
 
 ## What's built so far (phases 0–9)
 
@@ -19,6 +19,8 @@
 | Kits | `src/psy-drum/kit-library.ts` | Kit manifest validation, provenance enforcement, reject-at-load, sample fallback |
 | Determinism | `src/psy-drum/variance-rules.ts` | Single seeded mulberry32; humanize/round-robin/jitter vary, pitch/choke/routing never do |
 | MIDI | `src/psy-drum/midi-map.ts` | GM drum note map (overridable data), CC table, MIDI-learn state (no WebMIDI in device) |
+| Device | `src/psy-drum/device.ts` | `DrumDevice` implements `PsyDevice`: routing, choke+pool lockstep, suspend-safe onStop |
+| Factory | `src/psy-drum/index.ts` | `createDrumDevice(opts)` -> { device, load, dispose } |
 
 ## What PSYDRUM is
 
