@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PSYDRUM — live demo</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #2a1250, #0b0616 60%);
+      color: #e8e2ff;
+      padding: 32px;
+    }
+    h1 { font-weight: 800; letter-spacing: 0.04em; margin: 0; }
+    h1 span { color: #b388ff; }
+    .sub { opacity: 0.7; max-width: 640px; text-align: center; line-height: 1.5; margin: 0; }
+    .pads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: min(560px, 92vw); }
+    .pad {
+      padding: 22px 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: #e8e2ff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 60ms ease, background 60ms ease;
+      text-align: center;
+    }
+    .pad small { display: block; font-weight: 400; opacity: 0.55; margin-top: 4px; }
+    .pad.hit { transform: scale(0.96); background: rgba(179,136,255,0.28); }
+    .bar { display: flex; gap: 12px; align-items: center; }
+    button.action {
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(179,136,255,0.6);
+      background: rgba(179,136,255,0.18);
+      color: #e8e2ff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .note { opacity: 0.55; font-size: 13px; }
+    a { color: #b388ff; }
+  </style>
+</head>
+<body>
+  <h1>PSY<span>DRUM</span></h1>
+  <p class="sub">
+    The canonical drum realization device for the PSY family — analog-modeled drum synthesis,
+    choke groups, velocity-to-timbre, deterministic. This page runs the bundled device in your browser.
+  </p>
+
+  <div class="bar">
+    <button class="action" id="startBtn">▶ start audio</button>
+  </div>
+
+  <div class="pads" id="pads"></div>
+
+  <p class="note">
+    Source: <a href="https://github.com/dudududi144-source/psydrum">dudududi144-source/psydrum</a>
+    · phases 0–11 landed · demo = phase 16 preview
+  </p>
+
+  <script type="module">
+    // The bundle is produced by `bun run bundle` (scripts/build-bundle.ts) into
+    // public/psydrum.js and deployed alongside this page by the Pages workflow.
+    import { createDrumDevice } from './psydrum.js'
+
+    const startBtn = document.getElementById('startBtn')
+    const padsEl = document.getElementById('pads')
+
+    // GM-style drum pads: [label, midi note, channel]
+    const PADS = [
+      ['KICK', 36, 'kick'],
+      ['SNARE', 38, 'snare'],
+      ['CLAP', 39, 'clap'],
+      ['HAT (c)', 42, 'hat-closed'],
+      ['HAT (o)', 46, 'hat-open'],
+      ['TOM', 45, 'tom'],
+      ['CRASH', 49, 'crash'],
+      ['RIDE', 51, 'ride'],
+      ['PERC', 56, 'perc'],
+    ]
+
+    let ctx = null
+    let device = null
+
+    function buildPads() {
+      padsEl.innerHTML = ''
+      for (const [label, note, channel] of PADS) {
+        const el = document.createElement('div')
+        el.className = 'pad'
+        el.innerHTML = label + '<small>' + channel + ' · ' + note + '</small>'
+        el.addEventListener('pointerdown', () => hit(el, note, channel))
+        padsEl.appendChild(el)
+      }
+    }
+
+    function hit(el, note, channel) {
+      if (!device || !ctx) return
+      device.onEvent({ type: 'note', note: note, velocity: 110, duration: 0.1, channel: channel, at: ctx.currentTime })
+      el.classList.add('hit')
+      setTimeout(() => el.classList.remove('hit'), 90)
+    }
+
+    startBtn.addEventListener('click', async () => {
+      if (device) return
+      ctx = new AudioContext()
+      await ctx.resume()
+
+      // Respect the architecture: the device outputs ONLY to the injected
+      // outputNode (a gain we own), never ctx.destination directly.
+      const output = ctx.createGain()
+      output.gain.value = 0.9
+      output.connect(ctx.destination)
+
+      const result = createDrumDevice({
+        id: 'psydrum-demo',
+        ctx: ctx,
+        outputNode: output,
+        optsSeed: 1,
+      })
+      device = result.device
+      device.onStart()
+      startBtn.textContent = '● running'
+      startBtn.disabled = true
+    })
+
+    buildPads()
+  </script>
+</body>
+</html>
