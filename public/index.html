@@ -1,402 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PSYDRUM — live demo + step sequencer</title>
-  <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh;
-      display: flex; flex-direction: column; align-items: center;
-      gap: 18px;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: radial-gradient(1200px 600px at 50% -10%, #2a1250, #0b0616 60%);
-      color: #e8e2ff; padding: 28px;
-    }
-    h1 { font-weight: 800; letter-spacing: 0.04em; margin: 0; }
-    h1 span { color: #b388ff; }
-    .sub { opacity: 0.7; max-width: 680px; text-align: center; line-height: 1.45; margin: 0; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
-    button.action {
-      padding: 11px 18px; border-radius: 999px;
-      border: 1px solid rgba(179,136,255,0.6);
-      background: rgba(179,136,255,0.18); color: #e8e2ff;
-      font-weight: 700; cursor: pointer;
-    }
-    button.action.primary { background: rgba(179,136,255,0.4); }
-    label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; opacity: 0.85; }
-    input[type=range] { accent-color: #b388ff; }
-    .seq { width: min(760px, 96vw); display: flex; flex-direction: column; gap: 4px; }
-    .seqrow { display: grid; grid-template-columns: 74px repeat(16, 1fr); gap: 3px; align-items: center; }
-    .seqrow .rlabel { font-size: 11px; opacity: 0.7; text-align: right; padding-right: 8px; }
-    .cell {
-      height: 26px; border-radius: 5px; cursor: pointer;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-    }
-    .cell:nth-child(4n+2) { background: rgba(255,255,255,0.09); } /* beat accents */
-    .cell.on { background: rgba(179,136,255,0.6); border-color: rgba(179,136,255,0.9); }
-    .cell.playhead { box-shadow: 0 0 0 2px rgba(255,255,255,0.55) inset; }
-    .pads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(560px, 92vw); }
-    .pad {
-      padding: 18px 10px; border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
-      color: #e8e2ff; font-size: 14px; font-weight: 600; cursor: pointer;
-      user-select: none; text-align: center; transition: transform 60ms ease, background 60ms ease;
-    }
-    .pad small { display: block; font-weight: 400; opacity: 0.55; margin-top: 3px; }
-    .pad.hit { transform: scale(0.96); background: rgba(179,136,255,0.28); }
-    .mixer { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; width: min(760px, 96vw); }
-    .mstrip { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .mstrip .mlabel { font-size: 10px; opacity: 0.6; }
-    .mstrip input[type=range] { writing-mode: vertical-lr; direction: rtl; height: 74px; width: 18px; }
-    .note { opacity: 0.55; font-size: 13px; }
-    a { color: #b388ff; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#12141a" />
+<title>PSYDRUM Pro — Psytrance Drum Machine</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2312141a'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23b388ff' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23b388ff'/%3E%3C/svg%3E" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, rgba(96,60,180,0.16) 0%, transparent 60%),
+    radial-gradient(900px 500px at 85% 110%, rgba(20,120,130,0.12) 0%, transparent 60%),
+    linear-gradient(180deg,#0d0f14 0%,#08090d 100%);
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:36px 16px;
+}
+.chassis {
+  position:relative; width:min(1180px,100%);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg,#23262d 0%,#191c22 12%,#14161c 55%,#0f1116 100%);
+  border-radius:16px; border:1px solid #000; padding:26px 48px 28px;
+  box-shadow:0 40px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04) inset,0 2px 0 rgba(255,255,255,0.05) inset,0 -3px 0 rgba(0,0,0,0.6) inset;
+}
+.cheek { position:absolute; top:-7px; bottom:-7px; width:34px; border-radius:11px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 6px),
+    linear-gradient(90deg,#4d3117,#7a4f28 28%,#5d3c1c 72%,#3d2611);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,0.18),inset 0 -5px 10px rgba(0,0,0,0.55),0 14px 30px rgba(0,0,0,0.6); }
+.cheek.l { left:-40px; } .cheek.r { right:-40px; }
+.screw { position:absolute; width:15px; height:15px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#99a1ab,#3a3f46 70%,#22262b);
+  box-shadow:0 1px 2px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.25); }
+.screw.tl{top:10px;left:12px;} .screw.tr{top:10px;right:12px;} .screw.bl{bottom:10px;left:12px;} .screw.br{bottom:10px;right:12px;}
+.brandbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.brand { display:flex; align-items:baseline; gap:12px; }
+.brand .logo { font-size:24px; font-weight:800; letter-spacing:0.06em; color:#e8e2ff; }
+.brand .logo span { color:#b388ff; }
+.brand .sub { font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#6b6f7a; }
+.transport { display:flex; gap:10px; align-items:center; }
+.tbtn { padding:9px 16px; border-radius:8px; border:1px solid #000; cursor:pointer; font-weight:700; font-size:13px;
+  background:linear-gradient(180deg,#2c3038,#1b1e24); color:#cfd2d8;
+  box-shadow:0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
+.tbtn.primary { background:linear-gradient(180deg,#7c4dff,#5a2fd0); color:#fff; border-color:#3a1f8a; }
+.tbtn.on { box-shadow:0 0 12px rgba(179,136,255,0.6), inset 0 1px 0 rgba(255,255,255,0.12); }
+.tsel { background:#14161c; color:#cfd2d8; border:1px solid #000; border-radius:8px; padding:8px 10px; font-size:12px; }
+.section { margin-top:18px; }
+.section .stitle { font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#6b6f7a; margin-bottom:10px; }
+/* knob */
+.kwrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.kzone { position:relative; cursor:ns-resize; }
+.kzone svg { display:block; }
+.kcap { position:absolute; left:50%; top:50%; width:54%; height:54%; transform:translate(-50%,-50%) rotate(var(--rot,0deg));
+  border-radius:50%; background:radial-gradient(circle at 32% 26%,#565d66 0%,#2b2f36 46%,#1a1d22 78%,#101216 100%);
+  box-shadow:0 4px 9px rgba(0,0,0,0.7),inset 0 1px 1px rgba(255,255,255,0.18),inset 0 -3px 6px rgba(0,0,0,0.6); }
+.kptr { position:absolute; left:50%; top:7%; width:3px; height:32%; transform:translateX(-50%); background:var(--c,#b388ff); border-radius:2px; box-shadow:0 0 7px var(--c,#b388ff); }
+.klabel { font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:#8a8e98; }
+.kval { font-size:10px; color:#b388ff; font-weight:700; }
+.krow { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+/* sequencer grid */
+.seqgrid { display:flex; flex-direction:column; gap:5px; }
+.seqrow { display:grid; grid-template-columns:64px repeat(16,1fr); gap:4px; align-items:center; }
+.rlabel { font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:#8a8e98; text-align:right; padding-right:8px; }
+.step { height:26px; border-radius:4px; cursor:pointer; border:1px solid #000;
+  background:linear-gradient(180deg,#20242b,#161920);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.4); }
+.step:nth-child(4n+2) { background:linear-gradient(180deg,#262b33,#1a1e26); }
+.step.on { background:linear-gradient(180deg,#8a5cf0,#6a3fd8); border-color:#4a2ba0; box-shadow:0 0 8px rgba(138,92,240,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
+.step.ph { box-shadow:0 0 0 2px rgba(255,255,255,0.7) inset; }
+.mixrow { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.mixcell { display:flex; flex-direction:column; align-items:center; gap:3px; width:56px; }
+.mixcell .mlabel { font-size:9px; letter-spacing:0.05em; text-transform:uppercase; color:#8a8e98; }
+</style>
 </head>
 <body>
-  <h1>PSY<span>DRUM</span></h1>
-  <p class="sub">
-    Analog-modeled drum device for the PSY family. Below: a 16-step sequencer (host-side WHAT)
-    driving the device, plus live pads. Every drum has its own synthesis chain.
-  </p>
+<div class="chassis">
+  <div class="cheek l"></div><div class="cheek r"></div>
+  <div class="screw tl"></div><div class="screw tr"></div><div class="screw bl"></div><div class="screw br"></div>
 
-  <div class="row">
-    <button class="action primary" id="startBtn">▶ start audio</button>
-    <button class="action" id="seqPlayBtn">⏵ play sequence</button>
-    <label class="ctl">BPM <input type="range" id="bpmRange" min="90" max="160" value="138"><span id="bpmVal">138</span></label>
-    <label class="ctl">swing <input type="range" id="swingRange" min="0" max="60" value="0"><span id="swingVal">0%</span></label>
-    <label class="ctl">delay <input type="range" id="delaySendRange" min="0" max="100" value="0"><span id="delaySendVal">0%</span></label>
-    <label class="ctl">reverb <input type="range" id="reverbSendRange" min="0" max="100" value="0"><span id="reverbSendVal">0%</span></label>
-    <button class="action" id="clearBtn">clear</button>
-    <button class="action" id="psyBtn">psy gallop preset</button>
-    <label class="ctl">groove <select id="grooveSelect" style="background:rgba(255,255,255,0.06);color:#e8e2ff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px"></select></label>
-    <button class="action" id="samplesBtn">samples: off</button>
-    <button class="action" id="loadKitBtn">load kit JSON</button>
-    <button class="action" id="exportKitBtn">export kit JSON</button>
-    <input type="file" id="kitFileInput" accept=".json,application/json" style="display:none">
-    <label class="ctl">kit <select id="kitSelect" style="background:rgba(255,255,255,0.06);color:#e8e2ff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px"></select></label>
+  <div class="brandbar">
+    <div class="brand">
+      <div class="logo">PSY<span>DRUM</span></div>
+      <div class="sub">Psytrance Drum Machine · Pro</div>
+    </div>
+    <div class="transport">
+      <button class="tbtn primary" id="startBtn">▶ RUN</button>
+      <button class="tbtn" id="seqPlayBtn">⏵ SEQ</button>
+      <select class="tsel" id="grooveSelect"></select>
+      <select class="tsel" id="kitSelect"></select>
+      <button class="tbtn" id="loadKitBtn">load kit</button>
+      <button class="tbtn" id="exportKitBtn">export kit</button>
+      <input type="file" id="kitFileInput" accept=".json,application/json" style="display:none">
+      <button class="tbtn" id="samplesBtn">samples: off</button>
+    </div>
   </div>
 
-  <div class="seq" id="seq"></div>
+  <div class="section">
+    <div class="stitle">Step Sequencer · 16 steps</div>
+    <div class="seqgrid" id="seq"></div>
+  </div>
 
-  <div class="pads" id="pads"></div>
+  <div class="section">
+    <div class="stitle">Master · Tempo & Feel</div>
+    <div class="krow" id="masterKnobs"></div>
+  </div>
 
-  <div class="mixer" id="mixer"></div>
+  <div class="section">
+    <div class="stitle">Mixer · Per-Drum Level / Delay / Reverb</div>
+    <div class="mixrow" id="mixer"></div>
+  </div>
+</div>
 
-  <p class="note">
-    Source: <a href="https://github.com/dudududi144-source/psydrum">dudududi144-source/psydrum</a>
-    · device = pure HOW (phases 0–11) · sequencer = host-side demo (phase 16 preview)
-  </p>
+<script type="module">
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
 
-  <script type="module">
-    import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
+  const DRUMS = [
+    ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
+    ['HAT-C',42,'hat-closed'], ['HAT-O',46,'hat-open'], ['TOM',45,'tom'],
+    ['CRASH',49,'crash'], ['RIDE',51,'ride'], ['PERC',56,'perc'],
+  ]
+  const STEPS = 16
+  const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
 
-    const startBtn = document.getElementById('startBtn')
-    const seqPlayBtn = document.getElementById('seqPlayBtn')
-    const bpmRange = document.getElementById('bpmRange')
-    const bpmVal = document.getElementById('bpmVal')
-    const swingRange = document.getElementById('swingRange')
-    const swingVal = document.getElementById('swingVal')
-    const clearBtn = document.getElementById('clearBtn')
-    const psyBtn = document.getElementById('psyBtn')
-    const seqEl = document.getElementById('seq')
-    const padsEl = document.getElementById('pads')
+  let ctx=null, device=null
+  let bpm=138, swing=0
+  let seqPlaying=false, seqStep=0, seqNextTime=0, seqTimer=null
+  let playheadCells=[]
 
-    // [label, midi note, channel]
-    const DRUMS = [
-      ['KICK', 36, 'kick'],
-      ['SNARE', 38, 'snare'],
-      ['CLAP', 39, 'clap'],
-      ['HAT-C', 42, 'hat-closed'],
-      ['HAT-O', 46, 'hat-open'],
-      ['TOM', 45, 'tom'],
-      ['CRASH', 49, 'crash'],
-      ['RIDE', 51, 'ride'],
-      ['PERC', 56, 'perc'],
-    ]
-    const STEPS = 16
-
-    // pattern[row][step] = on/off
-    const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
-
-    let ctx = null
-    let device = null
-    let bpm = 138
-    let swing = 0
-    let seqPlaying = false
-    let seqStep = 0
-    let seqNextTime = 0
-    let seqTimer = null
-    let playheadCells = []
-
-    // ── build the 16-step grid ──
-    function buildSeq() {
-      seqEl.innerHTML = ''
-      playheadCells = []
-      for (let r = 0; r < DRUMS.length; r++) {
-        const row = document.createElement('div')
-        row.className = 'seqrow'
-        const lab = document.createElement('div')
-        lab.className = 'rlabel'
-        lab.textContent = DRUMS[r][0]
-        row.appendChild(lab)
-        playheadCells.push([])
-        for (let s = 0; s < STEPS; s++) {
-          const cell = document.createElement('div')
-          cell.className = 'cell' + (pattern[r][s] ? ' on' : '')
-          cell.addEventListener('pointerdown', () => {
-            pattern[r][s] = !pattern[r][s]
-            cell.classList.toggle('on', pattern[r][s])
-          })
-          row.appendChild(cell)
-          playheadCells[r].push(cell)
-        }
-        seqEl.appendChild(row)
-      }
+  // ── SVG knob (port of PsySynthPro's Knob) ──
+  function polarPt(cx,cy,r,a){const rad=a*Math.PI/180;return{x:cx+r*Math.sin(rad),y:cy-r*Math.cos(rad)}}
+  function arcPath(cx,cy,r,a0,a1){const s=polarPt(cx,cy,r,a0),e=polarPt(cx,cy,r,a1);const large=(a1-a0)>180?1:0;
+    return 'M '+s.x.toFixed(2)+' '+s.y.toFixed(2)+' A '+r+' '+r+' 0 '+large+' 1 '+e.x.toFixed(2)+' '+e.y.toFixed(2)}
+  class Knob {
+    constructor(host,cfg){
+      this.cfg=cfg; this.min=cfg.min; this.max=cfg.max
+      this.value=cfg.value!==undefined?cfg.value:cfg.def
+      this.onChange=cfg.onChange||(()=>{})
+      this.size=cfg.size||56
+      this.el=document.createElement('div'); this.el.className='kwrap'; host.appendChild(this.el)
+      this.build(); this.bind(); this.render()
     }
-
-    function setPlayhead(step) {
-      for (let r = 0; r < DRUMS.length; r++) {
-        for (let s = 0; s < STEPS; s++) {
-          playheadCells[r][s].classList.toggle('playhead', s === step)
-        }
-      }
+    build(){
+      const s=this.size, NS='http://www.w3.org/2000/svg'
+      this.zone=document.createElement('div'); this.zone.className='kzone'
+      this.zone.style.width=s+'px'; this.zone.style.height=s+'px'
+      const svg=document.createElementNS(NS,'svg'); svg.setAttribute('viewBox','0 0 100 100'); svg.setAttribute('width',s); svg.setAttribute('height',s)
+      const ticks=document.createElementNS(NS,'g')
+      for(let i=0;i<11;i++){const a=-135+(270*i)/10;const p1=polarPt(50,50,47,a),p2=polarPt(50,50,42,a)
+        const ln=document.createElementNS(NS,'line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y)
+        ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke','#3a3f46');ln.setAttribute('stroke-width','2');ticks.appendChild(ln)}
+      svg.appendChild(ticks)
+      this.valueArc=document.createElementNS(NS,'path'); this.valueArc.setAttribute('fill','none')
+      this.valueArc.setAttribute('stroke', this.cfg.color||'#b388ff'); this.valueArc.setAttribute('stroke-width','4'); this.valueArc.setAttribute('stroke-linecap','round')
+      svg.appendChild(this.valueArc)
+      this.zone.appendChild(svg)
+      this.cap=document.createElement('div'); this.cap.className='kcap'
+      this.ptr=document.createElement('div'); this.ptr.className='kptr'; this.ptr.style.setProperty('--c', this.cfg.color||'#b388ff')
+      this.cap.appendChild(this.ptr); this.zone.appendChild(this.cap)
+      this.el.appendChild(this.zone)
+      const lab=document.createElement('div'); lab.className='klabel'; lab.textContent=this.cfg.label; this.el.appendChild(lab)
+      this.valEl=document.createElement('div'); this.valEl.className='kval'; this.el.appendChild(this.valEl)
     }
-
-    // ── live pads ──
-    function buildPads() {
-      padsEl.innerHTML = ''
-      for (const [label, note, channel] of DRUMS) {
-        const el = document.createElement('div')
-        el.className = 'pad'
-        el.innerHTML = label + '<small>' + channel + ' · ' + note + '</small>'
-        el.addEventListener('pointerdown', () => {
-          if (!device || !ctx) return
-          device.onEvent({ type: 'note', note: note, velocity: 110, duration: 0.1, channel: channel, at: ctx.currentTime })
-          el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 90)
-        })
-        padsEl.appendChild(el)
-      }
+    norm(){return (this.value-this.min)/(this.max-this.min)}
+    bind(){
+      const self=this; let dragging=false,startY=0,startV=0
+      this.zone.addEventListener('pointerdown',e=>{dragging=true;startY=e.clientY;startV=self.value;self.zone.setPointerCapture(e.pointerId)})
+      this.zone.addEventListener('pointermove',e=>{if(!dragging)return
+        const dy=startY-e.clientY; const span=self.max-self.min
+        self.set(startV+dy/150*span,true)})
+      this.zone.addEventListener('pointerup',()=>{dragging=false})
+      this.zone.addEventListener('wheel',e=>{e.preventDefault();const span=self.max-self.min
+        self.set(self.value+(e.deltaY<0?1:-1)*span/50,true)},{passive:false})
+      this.zone.addEventListener('dblclick',()=>{self.set(self.cfg.def!==undefined?self.cfg.def:self.min,true)})
     }
-
-    // ── lookahead sequencer (host-side WHAT) ──
-    function secondsPerStep() { return 60 / bpm / 4 }
-
-    function scheduleStep(step, when) {
-      for (let r = 0; r < DRUMS.length; r++) {
-        if (pattern[r][step]) {
-          const [, note, channel] = DRUMS[r]
-          device.onEvent({ type: 'note', note: note, velocity: 112, duration: 0.1, channel: channel, at: when })
-        }
-      }
-      // visual playhead (best-effort, main thread)
-      const delayMs = Math.max(0, (when - ctx.currentTime) * 1000)
-      setTimeout(() => setPlayhead(step), delayMs)
+    set(v,silent){
+      this.value=Math.min(this.max,Math.max(this.min,v)); this.render()
+      if(!silent) this.onChange(this.value)
     }
-
-    function scheduleAhead() {
-      const LOOKAHEAD = 0.12
-      while (seqNextTime < ctx.currentTime + LOOKAHEAD) {
-        const sw = (seqStep % 2 === 1) ? (swing / 100) * secondsPerStep() * 0.5 : 0
-        scheduleStep(seqStep, seqNextTime + sw)
-        seqNextTime += secondsPerStep()
-        seqStep = (seqStep + 1) % STEPS
-      }
+    render(){
+      const p=this.norm(); const a1=-135+270*p
+      if(a1<=-133) this.valueArc.setAttribute('d','')
+      else this.valueArc.setAttribute('d',arcPath(50,50,34,-135,a1))
+      this.cap.style.setProperty('--rot',(-135+270*p)+'deg')
+      this.valEl.textContent=this.cfg.fmt?this.cfg.fmt(this.value):String(Math.round(this.value))
     }
+  }
 
-    function startSeq() {
-      if (!device || !ctx || seqPlaying) return
-      seqPlaying = true
-      seqStep = 0
-      seqNextTime = ctx.currentTime + 0.06
-      seqTimer = setInterval(scheduleAhead, 25)
-      seqPlayBtn.textContent = '⏸ stop sequence'
-    }
-
-    function stopSeq() {
-      seqPlaying = false
-      if (seqTimer) clearInterval(seqTimer)
-      seqTimer = null
-      setPlayhead(-1)
-      seqPlayBtn.textContent = '⏵ play sequence'
-    }
-
-    // ── psy gallop preset: driving 16th kick gallop + offbeat hats ──
-    function psyGallop() {
-      for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false)
-      const kick = DRUMS.findIndex(d => d[2] === 'kick')
-      const hatc = DRUMS.findIndex(d => d[2] === 'hat-closed')
-      const clap = DRUMS.findIndex(d => d[2] === 'clap')
-      // kick: 16th gallop (every step except a few) — classic psy driving
-      for (let s = 0; s < STEPS; s++) pattern[kick][s] = (s % 4 !== 3)
-      pattern[kick][0] = true
-      // offbeat open-ish hats on the off-16ths
-      for (let s = 2; s < STEPS; s += 4) pattern[hatc][s] = true
-      // clap on beat 2 and 4 (steps 4 and 12)
-      pattern[clap][4] = true; pattern[clap][12] = true
-      refreshGrid()
-    }
-
-    function refreshGrid() {
-      const rows = seqEl.querySelectorAll('.seqrow')
-      rows.forEach((row, r) => {
-        const cells = row.querySelectorAll('.cell')
-        cells.forEach((cell, s) => cell.classList.toggle('on', pattern[r][s]))
-      })
-    }
-
-    // ── start audio + device ──
-    startBtn.addEventListener('click', async () => {
-      if (device) return
-      ctx = new AudioContext()
-      await ctx.resume()
-      const output = ctx.createGain()
-      output.gain.value = 0.85
-      output.connect(ctx.destination)
-      device = createDrumDevice({ id: 'psydrum-demo', ctx: ctx, outputNode: output, optsSeed: 1, kitPatches: BUILTIN_KIT_MANIFEST.kits[0].drums }).device
-      device.onStart()
-      startBtn.textContent = '● running'
-      startBtn.disabled = true
-    })
-
-    seqPlayBtn.addEventListener('click', () => { seqPlaying ? stopSeq() : startSeq() })
-    bpmRange.addEventListener('input', () => { bpm = Number(bpmRange.value); bpmVal.textContent = bpmRange.value })
-    swingRange.addEventListener('input', () => { swing = Number(swingRange.value); swingVal.textContent = swingRange.value + '%' })
-    clearBtn.addEventListener('click', () => { for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false); refreshGrid() })
-    psyBtn.addEventListener('click', psyGallop)
-
-    // export the built-in kit manifest as a JSON template for custom kits
-    const exportKitBtn = document.getElementById('exportKitBtn')
-    exportKitBtn.addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(BUILTIN_KIT_MANIFEST, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'psydrum-kit-manifest.json'
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 2000)
-    })
-
-    // load kit from a JSON file (validated by loadKitManifest, reject-at-load)
-    const loadKitBtn = document.getElementById('loadKitBtn')
-    const kitFileInput = document.getElementById('kitFileInput')
-    loadKitBtn.addEventListener('click', () => kitFileInput.click())
-    kitFileInput.addEventListener('change', async () => {
-      const file = kitFileInput.files && kitFileInput.files[0]
-      if (!file || !device) return
-      try {
-        const text = await file.text()
-        const parsed = JSON.parse(text)
-        const counters = { kitLoadErrors: 0 }
-        const kits = loadKitManifest(parsed, counters)
-        if (kits.length > 0) {
-          device.loadKit(kits[0])
-          loadKitBtn.textContent = 'kit: ' + kits[0].id
-        } else {
-          loadKitBtn.textContent = 'kit: invalid'
-        }
-      } catch (e) {
-        loadKitBtn.textContent = 'kit: invalid'
+  // ── sequencer grid ──
+  const seqEl=document.getElementById('seq')
+  function buildSeq(){
+    seqEl.innerHTML=''; playheadCells=[]
+    for(let r=0;r<DRUMS.length;r++){
+      const row=document.createElement('div'); row.className='seqrow'
+      const lab=document.createElement('div'); lab.className='rlabel'; lab.textContent=DRUMS[r][0]; row.appendChild(lab)
+      playheadCells.push([])
+      for(let s=0;s<STEPS;s++){
+        const cell=document.createElement('div'); cell.className='step'+(pattern[r][s]?' on':'')
+        cell.addEventListener('pointerdown',()=>{pattern[r][s]=!pattern[r][s];cell.classList.toggle('on',pattern[r][s])})
+        row.appendChild(cell); playheadCells[r].push(cell)
       }
-      kitFileInput.value = ''
-    })
+      seqEl.appendChild(row)
+    }
+  }
+  function setPlayhead(step){
+    for(let r=0;r<DRUMS.length;r++) for(let s=0;s<STEPS;s++) playheadCells[r][s].classList.toggle('ph', s===step)
+  }
+  function refreshGrid(){
+    const rows=seqEl.querySelectorAll('.seqrow')
+    rows.forEach((row,r)=>{row.querySelectorAll('.step').forEach((cell,s)=>cell.classList.toggle('on',pattern[r][s]))})
+  }
 
-    // sample layer toggle: render procedural samples + attach to device
-    let samplesOn = false
-    let samplesLoaded = false
-    const samplesBtn = document.getElementById('samplesBtn')
-    samplesBtn.addEventListener('click', async () => {
-      if (!device || !ctx) return
-      samplesOn = !samplesOn
-      if (samplesOn && !samplesLoaded) {
-        samplesBtn.textContent = 'samples: loading…'
-        for (const [label, note, channel] of DRUMS) {
-          const dur = (channel === 'crash' || channel === 'ride') ? 0.5 : 0.25
-          const buf = await renderDrumSample(channel, ctx.sampleRate, dur)
-          device.setSample(channel, buf)
-          device.enableSampleLayer(channel, 0.45) // blend sample under the synthesis
-        }
-        samplesLoaded = true
+  // ── lookahead sequencer ──
+  function secondsPerStep(){return 60/bpm/4}
+  function scheduleStep(step,when){
+    for(let r=0;r<DRUMS.length;r++) if(pattern[r][step]){
+      const[,note,channel]=DRUMS[r]
+      device.onEvent({type:'note',note,velocity:112,duration:0.1,channel,at:when})
+    }
+    const delayMs=Math.max(0,(when-ctx.currentTime)*1000)
+    setTimeout(()=>setPlayhead(step),delayMs)
+  }
+  function scheduleAhead(){
+    while(seqNextTime<ctx.currentTime+0.12){
+      const sw=(seqStep%2===1)?(swing/100)*secondsPerStep()*0.5:0
+      scheduleStep(seqStep,seqNextTime+sw)
+      seqNextTime+=secondsPerStep(); seqStep=(seqStep+1)%STEPS
+    }
+  }
+  function startSeq(){if(!device||!ctx||seqPlaying)return
+    seqPlaying=true;seqStep=0;seqNextTime=ctx.currentTime+0.06;seqTimer=setInterval(scheduleAhead,25)
+    document.getElementById('seqPlayBtn').classList.add('on')}
+  function stopSeq(){seqPlaying=false;if(seqTimer)clearInterval(seqTimer);seqTimer=null;setPlayhead(-1)
+    document.getElementById('seqPlayBtn').classList.remove('on')}
+
+  // ── start audio + device ──
+  document.getElementById('startBtn').addEventListener('click',async()=>{
+    if(device)return
+    ctx=new AudioContext(); await ctx.resume()
+    const output=ctx.createGain(); output.gain.value=0.85; output.connect(ctx.destination)
+    device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
+    device.onStart()
+    document.getElementById('startBtn').classList.add('on')
+  })
+  document.getElementById('seqPlayBtn').addEventListener('click',()=>{seqPlaying?stopSeq():startSeq()})
+
+  // ── master knobs (bpm, swing, delay send, reverb send) ──
+  const masterKnobs=document.getElementById('masterKnobs')
+  new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v}})
+  new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v}})
+  new Knob(masterKnobs,{label:'Delay',min:0,max:100,def:0,color:'#ffb74d',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumDelaySend(ch,v/100)}})
+  new Knob(masterKnobs,{label:'Reverb',min:0,max:100,def:0,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumReverbSend(ch,v/100)}})
+
+  // ── mixer: per-drum level knob ──
+  const mixerEl=document.getElementById('mixer')
+  DRUMS.forEach(([label,note,channel])=>{
+    const cell=document.createElement('div'); cell.className='mixcell'; mixerEl.appendChild(cell)
+    new Knob(cell,{label:label,min:0,max:150,def:100,size:48,color:'#b388ff',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)device.setDrumLevel(channel,v/100)}})
+  })
+
+  // ── groove selector ──
+  const grooveSelect=document.getElementById('grooveSelect')
+  GROOVE_TEMPLATES.forEach((g,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=g.label;grooveSelect.appendChild(o)})
+  grooveSelect.addEventListener('change',()=>{
+    const g=GROOVE_TEMPLATES[Number(grooveSelect.value)]; if(!g)return
+    for(let r=0;r<DRUMS.length;r++)pattern[r].fill(false)
+    for(const[label,note,channel]of DRUMS){const pat=g.patterns[channel];if(!pat)continue
+      const ridx=DRUMS.findIndex(d=>d[2]===channel);const steps=parsePattern(pat)
+      for(let s=0;s<steps.length;s++)pattern[ridx][s]=steps[s]}
+    refreshGrid()
+  })
+
+  // ── kit selector ──
+  const kitSelect=document.getElementById('kitSelect')
+  BUILTIN_KIT_MANIFEST.kits.forEach((k,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=k.id;kitSelect.appendChild(o)})
+  kitSelect.addEventListener('change',()=>{const k=BUILTIN_KIT_MANIFEST.kits[Number(kitSelect.value)];if(device&&k)device.loadKit(k)})
+
+  // ── kit load/export ──
+  const loadKitBtn=document.getElementById('loadKitBtn'),kitFileInput=document.getElementById('kitFileInput')
+  loadKitBtn.addEventListener('click',()=>kitFileInput.click())
+  kitFileInput.addEventListener('change',async()=>{
+    const file=kitFileInput.files&&kitFileInput.files[0]; if(!file||!device)return
+    try{const text=await file.text();const parsed=JSON.parse(text)
+      const counters={kitLoadErrors:0};const kits=loadKitManifest(parsed,counters)
+      if(kits.length>0){device.loadKit(kits[0]);loadKitBtn.textContent=kits[0].id}else{loadKitBtn.textContent='invalid'}
+    }catch(e){loadKitBtn.textContent='invalid'}
+    kitFileInput.value=''
+  })
+  document.getElementById('exportKitBtn').addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(BUILTIN_KIT_MANIFEST,null,2)],{type:'application/json'})
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='psydrum-kit-manifest.json';a.click()
+    setTimeout(()=>URL.revokeObjectURL(url),2000)
+  })
+
+  // ── samples toggle ──
+  let samplesOn=false,samplesLoaded=false
+  const samplesBtn=document.getElementById('samplesBtn')
+  samplesBtn.addEventListener('click',async()=>{
+    if(!device||!ctx)return
+    samplesOn=!samplesOn
+    if(samplesOn&&!samplesLoaded){
+      samplesBtn.textContent='samples: loading…'
+      for(const[label,note,channel]of DRUMS){
+        const dur=(channel==='crash'||channel==='ride')?0.5:0.25
+        const buf=await renderDrumSample(channel,ctx.sampleRate,dur)
+        device.setSample(channel,buf); device.enableSampleLayer(channel,0.45)
       }
-      samplesBtn.textContent = 'samples: ' + (samplesOn ? 'on' : 'off')
-    })
+      samplesLoaded=true
+    }
+    samplesBtn.textContent='samples: '+(samplesOn?'on':'off')
+  })
 
-    // FX sends (step J): apply the same delay/reverb send level to all drums
-    const delaySendRange = document.getElementById('delaySendRange')
-    const delaySendVal = document.getElementById('delaySendVal')
-    const reverbSendRange = document.getElementById('reverbSendRange')
-    const reverbSendVal = document.getElementById('reverbSendVal')
-    delaySendRange.addEventListener('input', () => {
-      delaySendVal.textContent = delaySendRange.value + '%'
-      if (device) for (const [, , channel] of DRUMS) device.setDrumDelaySend(channel, Number(delaySendRange.value) / 100)
-    })
-    reverbSendRange.addEventListener('input', () => {
-      reverbSendVal.textContent = reverbSendRange.value + '%'
-      if (device) for (const [, , channel] of DRUMS) device.setDrumReverbSend(channel, Number(reverbSendRange.value) / 100)
-    })
-
-    // mixer: one vertical level slider per drum
-    const mixerEl = document.getElementById('mixer')
-    DRUMS.forEach(([label, note, channel]) => {
-      const strip = document.createElement('div')
-      strip.className = 'mstrip'
-      const lab = document.createElement('div')
-      lab.className = 'mlabel'
-      lab.textContent = label
-      const rng = document.createElement('input')
-      rng.type = 'range'
-      rng.min = '0'; rng.max = '150'; rng.value = '100'
-      rng.addEventListener('input', () => {
-        if (device) device.setDrumLevel(channel, Number(rng.value) / 100)
-      })
-      strip.appendChild(lab)
-      strip.appendChild(rng)
-      mixerEl.appendChild(strip)
-    })
-
-    // groove template selector: apply a ready-made groove to the sequencer
-    const grooveSelect = document.getElementById('grooveSelect')
-    GROOVE_TEMPLATES.forEach((g, i) => {
-      const opt = document.createElement('option')
-      opt.value = String(i)
-      opt.textContent = g.label
-      grooveSelect.appendChild(opt)
-    })
-    grooveSelect.addEventListener('change', () => {
-      const g = GROOVE_TEMPLATES[Number(grooveSelect.value)]
-      if (!g) return
-      for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false)
-      for (const [label, note, channel] of DRUMS) {
-        const pat = g.patterns[channel]
-        if (!pat) continue
-        const ridx = DRUMS.findIndex(d => d[2] === channel)
-        const steps = parsePattern(pat)
-        for (let s = 0; s < steps.length; s++) pattern[ridx][s] = steps[s]
-      }
-      refreshGrid()
-    })
-
-    // populate kit selector from the built-in manifest
-    const kitSelect = document.getElementById('kitSelect')
-    BUILTIN_KIT_MANIFEST.kits.forEach((k, i) => {
-      const opt = document.createElement('option')
-      opt.value = String(i)
-      opt.textContent = k.id + ' (' + k.style + ')'
-      kitSelect.appendChild(opt)
-    })
-    kitSelect.addEventListener('change', () => {
-      const idx = Number(kitSelect.value)
-      const kit = BUILTIN_KIT_MANIFEST.kits[idx]
-      if (device && kit) {
-        device.loadKit(kit)
-      }
-    })
-
-    buildSeq()
-    buildPads()
-    psyGallop() // start with a psy groove loaded
-  </script>
+  buildSeq()
+  // default groove
+  grooveSelect.value='0'; grooveSelect.dispatchEvent(new Event('change'))
+</script>
 </body>
 </html>
