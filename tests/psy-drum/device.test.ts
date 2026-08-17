@@ -202,3 +202,28 @@ describe('suspend safety (onStop)', () => {
     expect(() => device.onStop()).not.toThrow()
   })
 })
+
+describe('mixer (per-drum level)', () => {
+  it('setDrumLevel sets a bus gain and getDrumLevel reads it back', () => {
+    const { device } = makeDevice()
+    device.onStart()
+    device.setDrumLevel('kick', 0.5)
+    expect(device.getDrumLevel('kick')).toBeCloseTo(0.5, 6)
+    device.setDrumLevel('snare', 1.2)
+    expect(device.getDrumLevel('snare')).toBeCloseTo(1.2, 6)
+  })
+
+  it('setDrumLevel clamps to 0..1.5', () => {
+    const { device } = makeDevice()
+    device.onStart()
+    device.setDrumLevel('kick', 99)
+    expect(device.getDrumLevel('kick')).toBeCloseTo(1.5, 6)
+    device.setDrumLevel('kick', -5)
+    expect(device.getDrumLevel('kick')).toBeCloseTo(0, 6)
+  })
+
+  it('getDrumLevel returns 1 before onStart (no buses yet)', () => {
+    const { device } = makeDevice()
+    expect(device.getDrumLevel('kick')).toBe(1)
+  })
+})
