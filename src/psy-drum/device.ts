@@ -287,31 +287,26 @@ export class DrumDevice implements PsyDevice {
     if (this.deviceOut === null) return
     var bus = this.buses[role]
     if (bus === undefined) return
+    if (this.noiseBuffer === null) return
 
     var patch = this.patches[role]
     var params = resolveDrumParams(patch === undefined ? {} : patch, event.velocity, 'linear', 2, this.ctx.sampleRate / 2)
 
-    var now = this.ctx.currentTime
-    var osc = this.ctx.createOscillator()
-    osc.type = 'sine'
-    // Pitched drums use the note as a pitch hint; unpitched ignore it (B1).
-    var baseHz = pitch === null ? 100 : 40 + pitch * 2
-    osc.frequency.value = baseHz
+    // Per-role ring window; the per-drum envelopes shape the actual decay.
+    var dur = role === 'crash' || role === 'ride' ? 0.9 : role === 'hat-open' ? 0.4 : 0.5
 
-    var filter = this.ctx.createBiquadFilter()
-    filter.type = 'lowpass'
-    filter.frequency.value = params.cutoff
-
-    var vca = this.ctx.createGain()
-    vca.gain.setValueAtTime(0.0001, now)
-    vca.gain.linearRampToValueAtTime(params.gain, now + 0.003)
-    vca.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
-
-    osc.connect(filter)
-    filter.connect(vca)
-    vca.connect(bus)
-    osc.start(now)
-    osc.stop(now + 0.3)
+    var sc: SynthCtx = {
+      ctx: this.ctx,
+      noiseBuffer: this.noiseBuffer,
+      bus: bus,
+      now: this.ctx.currentTime,
+      params: params,
+      patch: patch === undefined ? {} : patch,
+      duration: dur,
+    }
+    // `pitch` is a pitch hint for pitched drums (tom/ride); unpitched ignore it (B1).
+    void pitch
+    synthDrum(role, sc)
   }
 }
 
