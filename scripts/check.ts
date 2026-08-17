@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 
 // PSYDRUM structure gate: every required file must exist.
-// Phase 0 scaffold baseline; grows as phases land.
+// Phase 0 scaffold baseline + phase 1 foundation shim; grows as phases land.
 
 var requiredFiles = [
   'README.md',
@@ -16,7 +16,14 @@ var requiredFiles = [
   '.github/workflows/ci.yml',
   'scripts/secret-scan.ts',
   'scripts/check.ts',
-  'tests/scaffold.test.ts'
+  'tests/scaffold.test.ts',
+  'src/psy-foundation-shim/protocol.ts',
+  'src/psy-foundation-shim/transport.ts',
+  'src/psy-foundation-shim/device.ts',
+  'src/psy-foundation-shim/host.ts',
+  'src/psy-foundation-shim/index.ts',
+  'tests/psy-drum/shim-sync.test.ts',
+  'tests/psy-drum/shim-contract.test.ts'
 ];
 
 var missing: string[] = [];
