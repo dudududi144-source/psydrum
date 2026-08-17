@@ -96,8 +96,9 @@ Choke is a drum-native behavior that belongs in the device (it is HOW, not WHAT)
 | Group | Behavior |
 |---|---|
 | hat | open-hat trigger chokes any active closed-hat; closed-hat trigger chokes active open-hat (exclusive pair) |
-| crash | a new crash chokes the previous crash of the same group (configurable max-poly) |
-| none | kick/snare/tom/perc do not choke each other |
+| crash | a new crash chokes the previous crash of the same group (configurable crashMaxPoly) |
+| ride | a new ride self-chokes the previous ride (configurable rideMaxPoly) |
+| none | kick/snare/clap/tom/perc do not choke each other |
 
 Choke is deterministic and counted (chokeCounter). Choke latency (time from trigger to choked-voice reaching -60dB) is < 3ms.
 
