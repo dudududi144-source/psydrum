@@ -42,7 +42,9 @@ var requiredFiles = [
   'src/psy-drum/kit-library.ts',
   'tests/psy-drum/kit-library.test.ts',
   'src/psy-drum/variance-rules.ts',
-  'tests/psy-drum/variance-rules.test.ts'
+  'tests/psy-drum/variance-rules.test.ts',
+  'src/psy-drum/midi-map.ts',
+  'tests/psy-drum/midi-map.test.ts'
 ];
 
 var missing: string[] = [];
