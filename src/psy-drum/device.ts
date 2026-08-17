@@ -193,6 +193,20 @@ export class DrumDevice implements PsyDevice {
     }
   }
 
+  // Mixer (step W): set a drum bus level (0..1.5). No-op before onStart.
+  setDrumLevel(role: DrumRole, level: number): void {
+    var bus = this.buses[role]
+    if (bus === undefined) return
+    var lvl = Math.max(0, Math.min(1.5, level))
+    bus.gain.value = lvl
+  }
+
+  // Read back a drum bus level (1 before onStart).
+  getDrumLevel(role: DrumRole): number {
+    var bus = this.buses[role]
+    return bus === undefined ? 1 : bus.gain.value
+  }
+
   onStop(): void {
     if (!this.started) return
     this.started = false
