@@ -22,7 +22,7 @@ Phased build plan for the PSY Drum Device. Every phase ends GREEN (all tests pas
 | 13 | Style acceptance tests | ⬜ |
 | 14 | Sample layer (optional) | ⬜ |
 | 15 | Bundle build + size budget | ⬜ |
-| 16 | Demo page + integration proof | ⬜ |
+| 16 | Demo page + integration proof | ✅ landed (demo + 16-step sequencer, live at GitHub Pages) |
 
 ## Ground rules (apply to every phase)
 
