@@ -278,12 +278,16 @@ export class DrumDevice implements PsyDevice {
     applyChokeDecision(this.choke, decision)
     applyTrigger(this.choke, role)
 
+    // Voice start time: honour a future event.at (scheduled by a host
+    // sequencer); otherwise start now.
+    var when = event.at > this.ctx.currentTime ? event.at : this.ctx.currentTime
+
     // allocVoice enforces the per-drum budget cap (steals oldest of the role).
     allocVoice(pool, role, event.channel, this.ctx.currentTime, this.counters)
-    this.startVoiceAudio(role, event, pitch)
+    this.startVoiceAudio(role, event, pitch, when)
   }
 
-  private startVoiceAudio(role: DrumRole, event: NoteEvent, pitch: number | null): void {
+  private startVoiceAudio(role: DrumRole, event: NoteEvent, pitch: number | null, when: number): void {
     if (this.deviceOut === null) return
     var bus = this.buses[role]
     if (bus === undefined) return
@@ -299,7 +303,7 @@ export class DrumDevice implements PsyDevice {
       ctx: this.ctx,
       noiseBuffer: this.noiseBuffer,
       bus: bus,
-      now: this.ctx.currentTime,
+      now: when,
       params: params,
       patch: patch === undefined ? {} : patch,
       duration: dur,
