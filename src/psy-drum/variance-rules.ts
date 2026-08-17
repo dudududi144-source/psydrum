@@ -69,6 +69,8 @@ export function roundRobinVariant(hitCounter: number, numVariants: number): numb
 // Clap multi-tap jitter: signed jitter in milliseconds within +-maxJitterMs.
 export function clapTapJitter(rng: () => number, maxJitterMs: number): number {
   const max = Math.max(0, maxJitterMs)
+  // Explicit zero guard: (negative * 0) would produce -0, which fails toBe(0).
+  if (max === 0) return 0
   return (rng() * 2 - 1) * max
 }
 
