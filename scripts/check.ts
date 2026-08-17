@@ -42,6 +42,8 @@ var requiredFiles = [
   'src/psy-drum/sample-gen.ts',
   'src/psy-drum/fx.ts',
   'tests/psy-drum/fx.test.ts',
+  'src/psy-drum/grooves.ts',
+  'tests/psy-drum/grooves.test.ts',
   'tests/psy-drum/default-kit.test.ts',
   'tests/psy-drum/kit-builtin.test.ts',
   'tests/psy-drum/voice-synth.test.ts',
