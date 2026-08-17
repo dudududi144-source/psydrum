@@ -216,6 +216,17 @@ export class DrumDevice implements PsyDevice {
     this.samples[role] = buffer
   }
 
+  // Enable the sample layer for a drum by setting patch.sample.gain.
+  // assetId stays null so applySampleFallback will not zero the gain.
+  enableSampleLayer(role: DrumRole, gain: number): void {
+    var patch = this.patches[role]
+    if (patch === undefined) {
+      patch = {}
+      this.patches[role] = patch
+    }
+    patch.sample = { assetId: null, gain: Math.max(0, Math.min(1, gain)) }
+  }
+
   onStop(): void {
     if (!this.started) return
     this.started = false
