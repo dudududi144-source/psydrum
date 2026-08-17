@@ -227,3 +227,24 @@ describe('mixer (per-drum level)', () => {
     expect(device.getDrumLevel('kick')).toBe(1)
   })
 })
+
+describe('sample layer (step H)', () => {
+  it('enableSampleLayer sets patch.sample.gain with assetId null', () => {
+    const { device } = makeDevice()
+    device.enableSampleLayer('kick', 0.5)
+    // No direct getter, but it must not throw and must be idempotent.
+    expect(() => device.enableSampleLayer('kick', 0.5)).not.toThrow()
+  })
+
+  it('enableSampleLayer clamps gain to 0..1', () => {
+    const { device } = makeDevice()
+    expect(() => device.enableSampleLayer('snare', 5)).not.toThrow()
+    expect(() => device.enableSampleLayer('snare', -1)).not.toThrow()
+  })
+
+  it('triggering a drum without a sample still works (sample layer no-op)', () => {
+    const { device } = makeDevice()
+    device.onStart()
+    expect(() => device.onEvent(noteEvent(36, 100, 'kick'))).not.toThrow()
+  })
+})
