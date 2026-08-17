@@ -31,8 +31,8 @@ import type {
 import type { MusicalTransport } from '../psy-foundation-shim/transport'
 import type { PsyDevice } from '../psy-foundation-shim/device'
 
-import type { DrumConfig, DrumPatch, DrumRole } from './types'
-import { DRUM_ROLES, defaultDrumConfig } from './types'
+import type { DrumConfig, DrumPatch, DrumRole, KitDefinition } from './types'
+import { DRUM_ROLES, defaultDrumConfig, isDrumRole } from './types'
 import { createCounters } from './counters'
 import type { DrumCounters } from './counters'
 import { createLatencyState, recordBaseLatency, reportLatencyMs } from './latency'
@@ -138,6 +138,23 @@ export class DrumDevice implements PsyDevice {
     // Store context; kit-bank selection by style + energy is a host concern the
     // device reflects here (no WHAT is invented inside the device).
     this.context = context
+  }
+
+  // Kit loading (phase 10; sample fallback is applied by the caller/host via
+  // kit-library.applySampleFallback when the sample layer lands in phase 14).
+  // Applies a validated KitDefinition's patches + choke config to the device.
+  loadKit(kit: KitDefinition): void {
+    var patches: Partial<Record<DrumRole, DrumPatch>> = {}
+    var drumKeys = Object.keys(kit.drums)
+    for (var i = 0; i < drumKeys.length; i++) {
+      var key = drumKeys[i]
+      if (isDrumRole(key)) {
+        var patch = kit.drums[key]
+        if (patch !== undefined) patches[key] = patch
+      }
+    }
+    this.patches = patches
+    this.config.choke = kit.choke
   }
 
   onStart(): void {
