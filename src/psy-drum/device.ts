@@ -1,11 +1,11 @@
 // PSYDRUM device assembly + factory (phase 10).
 //
 // DrumDevice implements the canonical PsyDevice contract (shim/device.ts):
-//   - onEvent   : routes NoteEvents -> trigger / note-off / drop (NEVER throws)
+//   - onEvent    : routes NoteEvents -> trigger / note-off / drop (NEVER throws)
 //   - onTransport: stores a snapshot only (device never owns the transport)
-//   - onContext : stores context; selects kit-bank by style + energy macro
-//   - onStart   : allocates the voice pool + records base latency
-//   - onStop    : fast-releases all voices (10ms) + disconnects (suspend safety)
+//   - onContext  : stores context; kit-bank selection by style + energy macro
+//   - onStart    : allocates the voice pool + records base latency
+//   - onStop     : fast-releases all voices + disconnects (suspend safety)
 //   - capabilities / reportLatencyMs : the ONLY upstream reporting channels
 //
 // Audio graph (section 4.5): device subgraph -> per-drum buses -> deviceOut
@@ -15,6 +15,12 @@
 //
 // Determinism: a single seeded VarianceSource (phase 8) drives all allowed
 // variance. Pitch mapping / choke / drop policy / role routing never vary.
+//
+// Bookkeeping uses TWO cooperating state machines, kept in lockstep here:
+//   - the voice pool (phase 6) owns the actual VoiceState slots;
+//   - the choke state machine (phase 4) tracks choke-relevant counts.
+// allocVoice already enforces per-drum budget caps by stealing the oldest
+// voice of the over-cap role (section 4.4), so no separate cap drop is needed.
 
 import type {
   DeviceCapabilities,
@@ -26,16 +32,28 @@ import type { MusicalTransport } from '../psy-foundation-shim/transport'
 import type { PsyDevice } from '../psy-foundation-shim/device'
 
 import type { DrumConfig, DrumPatch, DrumRole } from './types'
-import { DRUM_ROLES, DEFAULT_ROLE_CAPS, defaultDrumConfig } from './types'
+import { DRUM_ROLES, defaultDrumConfig } from './types'
 import { createCounters } from './counters'
 import type { DrumCounters } from './counters'
 import { createLatencyState, recordBaseLatency, reportLatencyMs } from './latency'
 import type { LatencyState } from './latency'
 import { routeNoteEvent } from './note-router'
 import type { RouteContext } from './note-router'
-import { createChokeState, decideChoke, applyChokeDecision, applyTrigger, applyRelease } from './choke'
+import {
+  createChokeState,
+  decideChoke,
+  applyChokeDecision,
+  applyTrigger,
+  applyRelease,
+} from './choke'
 import type { ChokeState } from './choke'
-import { createVoicePool, allocVoice, releaseByChannel, chokeRole, resetPool, countActive } from './voice-pool'
+import {
+  createVoicePool,
+  allocVoice,
+  releaseByChannel,
+  chokeRole,
+  resetPool,
+} from './voice-pool'
 import type { VoicePool } from './voice-pool'
 import { createVarianceSource } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
@@ -167,7 +185,7 @@ export class DrumDevice implements PsyDevice {
   }
 
   onEvent(event: MusicalEvent): void {
-    // Never throws: any unexpected event shape is ignored (counted), not thrown.
+    // Never throws: any unexpected event shape is counted, not thrown.
     try {
       if (event.type !== 'note') return
       this.handleNote(event)
@@ -179,8 +197,7 @@ export class DrumDevice implements PsyDevice {
   private handleNote(event: NoteEvent): void {
     this.counters.eventsReceived = this.counters.eventsReceived + 1
 
-    // Role resolution happens two ways: by NoteEvent.channel (canonical path),
-    // or by MIDI note number through the (overridable) note map.
+    // Role resolution via the (overridable) MIDI note map.
     var role = noteToRole(this.noteMap, event.note)
     if (role === null) {
       this.counters.eventsDropped = this.counters.eventsDropped + 1
@@ -188,11 +205,12 @@ export class DrumDevice implements PsyDevice {
       return
     }
 
+    var resolvedRole = role
     var routeCtx: RouteContext = {
       nowSec: this.ctx.currentTime,
       staleWindowSec: 0.05,
       resolveChannel: function (): DrumRole | null {
-        return role
+        return resolvedRole
       },
     }
 
@@ -208,48 +226,31 @@ export class DrumDevice implements PsyDevice {
 
     if (decision.kind === 'note-off') {
       if (this.pool !== null) releaseByChannel(this.pool, event.channel, this.ctx.currentTime)
+      applyRelease(this.choke, resolvedRole)
       return
     }
 
     // trigger
-    this.triggerVoice(decision.role, event, decision.pitch)
+    this.triggerVoice(resolvedRole, event, decision.pitch)
   }
 
   private triggerVoice(role: DrumRole, event: NoteEvent, pitch: number | null): void {
     if (this.pool === null) return
+    var pool = this.pool
 
-    // Per-drum budget cap: skip if this drum is already at its cap.
-    var cap = DEFAULT_ROLE_CAPS[role]
-    var activeForRole = 0
-    for (var i = 0; i < DRUM_ROLES.length; i++) void DRUM_ROLES[i]
-    activeForRole = this.countActiveRole(role)
-    if (activeForRole >= cap) {
-      this.counters.eventsDropped = this.counters.eventsDropped + 1
-      return
-    }
-
-    // Choke: decide + apply before the new voice lands.
-    var chokeDecision = decideChoke(this.choke, role, this.config.choke)
-    var totalChoked = chokeDecision.chokeHatClosed + chokeDecision.chokeHatOpen + chokeDecision.chokeCrash + chokeDecision.chokeRide
-    if (totalChoked > 0) {
-      applyChokeDecision(this.choke, chokeDecision)
-      this.counters.chokeCount = this.counters.chokeCount + totalChoked
-    }
+    // Choke: decide, apply to the pool (frees choked voices), then update the
+    // choke state machine so subsequent decisions stay consistent.
+    var decision = decideChoke(this.choke, role, this.config.choke)
+    if (decision.chokeHatClosed > 0) chokeRole(pool, 'hat-closed', decision.chokeHatClosed, this.counters)
+    if (decision.chokeHatOpen > 0) chokeRole(pool, 'hat-open', decision.chokeHatOpen, this.counters)
+    if (decision.chokeCrash > 0) chokeRole(pool, 'crash', decision.chokeCrash, this.counters)
+    if (decision.chokeRide > 0) chokeRole(pool, 'ride', decision.chokeRide, this.counters)
+    applyChokeDecision(this.choke, decision)
     applyTrigger(this.choke, role)
 
-    allocVoice(this.pool, role, event.channel, this.ctx.currentTime, this.counters)
+    // allocVoice enforces the per-drum budget cap (steals oldest of the role).
+    allocVoice(pool, role, event.channel, this.ctx.currentTime, this.counters)
     this.startVoiceAudio(role, event, pitch)
-  }
-
-  private countActiveRole(role: DrumRole): number {
-    if (this.pool === null) return 0
-    var n = 0
-    var pool = this.pool
-    for (var i = 0; i < pool.voices.length; i++) {
-      var v = pool.voices[i]
-      if (v.active && v.role === role) n = n + 1
-    }
-    return n
   }
 
   private startVoiceAudio(role: DrumRole, event: NoteEvent, pitch: number | null): void {
