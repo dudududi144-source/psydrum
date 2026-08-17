@@ -69,6 +69,7 @@
     <label class="ctl">swing <input type="range" id="swingRange" min="0" max="60" value="0"><span id="swingVal">0%</span></label>
     <button class="action" id="clearBtn">clear</button>
     <button class="action" id="psyBtn">psy gallop preset</button>
+    <button class="action" id="samplesBtn">samples: off</button>
     <label class="ctl">kit <select id="kitSelect" style="background:rgba(255,255,255,0.06);color:#e8e2ff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px"></select></label>
   </div>
 
@@ -84,7 +85,7 @@
   </p>
 
   <script type="module">
-    import { createDrumDevice, BUILTIN_KIT_MANIFEST } from './psydrum.js'
+    import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample } from './psydrum.js'
 
     const startBtn = document.getElementById('startBtn')
     const seqPlayBtn = document.getElementById('seqPlayBtn')
@@ -259,6 +260,26 @@
     swingRange.addEventListener('input', () => { swing = Number(swingRange.value); swingVal.textContent = swingRange.value + '%' })
     clearBtn.addEventListener('click', () => { for (let r = 0; r < DRUMS.length; r++) pattern[r].fill(false); refreshGrid() })
     psyBtn.addEventListener('click', psyGallop)
+
+    // sample layer toggle: render procedural samples + attach to device
+    let samplesOn = false
+    let samplesLoaded = false
+    const samplesBtn = document.getElementById('samplesBtn')
+    samplesBtn.addEventListener('click', async () => {
+      if (!device || !ctx) return
+      samplesOn = !samplesOn
+      if (samplesOn && !samplesLoaded) {
+        samplesBtn.textContent = 'samples: loading…'
+        for (const [label, note, channel] of DRUMS) {
+          const dur = (channel === 'crash' || channel === 'ride') ? 0.5 : 0.25
+          const buf = await renderDrumSample(channel, ctx.sampleRate, dur)
+          device.setSample(channel, buf)
+          // enable the sample layer in the patch for this drum
+        }
+        samplesLoaded = true
+      }
+      samplesBtn.textContent = 'samples: ' + (samplesOn ? 'on' : 'off')
+    })
 
     // mixer: one vertical level slider per drum
     const mixerEl = document.getElementById('mixer')
