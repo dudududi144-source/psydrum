@@ -34,7 +34,9 @@ var requiredFiles = [
   'tests/psy-drum/note-router.test.ts',
   'tests/psy-drum/audit-b1.test.ts',
   'src/psy-drum/choke.ts',
-  'tests/psy-drum/choke.test.ts'
+  'tests/psy-drum/choke.test.ts',
+  'src/psy-drum/voice.ts',
+  'tests/psy-drum/voice.test.ts'
 ];
 
 var missing: string[] = [];
