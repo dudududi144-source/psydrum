@@ -2,7 +2,7 @@
 
 **PSY Drum Device** — the canonical drum realization device for the PSY family. Pure HOW layer, third concrete sound-producing device (after `psy-sampler` and `psysynth`). Analog-modeled drum synthesis, drum-specific organization (choke groups, kits, groove rendering), MIDI-capable, deterministic, psytrance-grade.
 
-> **Status: BUILDING — phase 2 landed.** Phase 0 (scaffold), phase 1 (verbatim foundation shim), and phase 2 (canonical drum types, counters, measured latency) are green. Read `ARCHITECTURE.md` first, then `ARCHITECTURE-STYLE.md`, then `PSY-DRUM-IMPLEMENTATION-PLAN.md` (the phased plan; every phase ends green).
+> **Status: BUILDING — phase 3 landed.** Phase 0 (scaffold), phase 1 (verbatim foundation shim), phase 2 (canonical drum types, counters, measured latency), and phase 3 (B1-enforcing note-router + audit-B1 static-analysis hard gate) are green. Read `ARCHITECTURE.md` first, then `ARCHITECTURE-STYLE.md`, then `PSY-DRUM-IMPLEMENTATION-PLAN.md` (the phased plan; every phase ends green).
 
 ## What PSYDRUM is
 
