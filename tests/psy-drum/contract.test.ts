@@ -119,19 +119,31 @@ describe('contract: NoteEvent end-to-end via DeviceHost + InMemoryChannel', () =
   })
 })
 
+function makeTransport() {
+  const origin = { audioTime: { seconds: 0 }, beatIndex: 0, bpm: 140 }
+  return {
+    bpm: 140,
+    beat: 0,
+    bar: 0,
+    beatsPerBar: 4,
+    beatTime: { seconds: 0, phase: 0 },
+    barTime: 0,
+    phase: 0,
+    barPhase: 0,
+    confidence: 1,
+    locked: true,
+    revision: 1,
+    origin: origin,
+    lastObservationAgo: 0,
+    observationCount: 1,
+  }
+}
+
 describe('contract: transport + context fan-out', () => {
   it('pushTransport reaches the device without throwing', () => {
     const { host, device } = makeHostedDevice()
     host.register(device)
-    expect(() =>
-      host.pushTransport(
-        {
-          state: { bpm: 140, beat: 0, bar: 0, phase: 0, locked: true, confidence: 1, revision: 1 },
-          observedAtMs: 0,
-        } as never,
-        0,
-      ),
-    ).not.toThrow()
+    expect(() => host.pushTransport(makeTransport(), 0)).not.toThrow()
     host.dispose()
   })
 
