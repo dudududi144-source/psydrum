@@ -62,3 +62,6 @@ export type { KickParams } from './kick-dsp'
 
 export { renderSnareSamples, renderHatSamples, renderSnareInto, renderHatInto } from './perc-dsp'
 export type { SnareParams, HatParams } from './perc-dsp'
+
+export { renderTomSamples, renderPercSamples, renderCymbalSamples } from './perc-dsp'
+export type { TomParams, PercParams, CymbalParams } from './perc-dsp'
