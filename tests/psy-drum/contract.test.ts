@@ -59,6 +59,8 @@ function makeMockAudioContext() {
     }),
     createBufferSource: () => ({ ...makeNode(), buffer: null, start: () => {}, stop: () => {} }),
     createWaveShaper: () => ({ ...makeNode(), curve: null, oversample: 'none' }),
+    createDelay: () => ({ ...makeNode(), delayTime: makeParam(0.28) }),
+    createConvolver: () => ({ ...makeNode(), buffer: null }),
   }
 }
 
