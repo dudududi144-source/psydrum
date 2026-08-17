@@ -61,6 +61,7 @@ import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
 import { synthDrum, makeNoiseBuffer } from './voice-synth'
+import { makeReverbIR } from './fx'
 import type { SynthCtx } from './voice-synth'
 
 // Suspend-safety: voices fast-release over this window on onStop (section 4.5).
@@ -97,6 +98,10 @@ export class DrumDevice implements PsyDevice {
   private started: boolean
   private noiseBuffer: AudioBuffer | null
   private samples: Partial<Record<DrumRole, AudioBuffer>>
+  private delayBus: DelayNode | null
+  private reverbBus: ConvolverNode | null
+  private delaySends: Partial<Record<DrumRole, GainNode>>
+  private reverbSends: Partial<Record<DrumRole, GainNode>>
 
   constructor(opts: DrumDeviceOptions) {
     this.id = opts.id === undefined ? 'psydrum' : opts.id
@@ -117,6 +122,10 @@ export class DrumDevice implements PsyDevice {
     this.started = false
     this.noiseBuffer = null
     this.samples = {}
+    this.delayBus = null
+    this.reverbBus = null
+    this.delaySends = {}
+    this.reverbSends = {}
   }
 
   capabilities(): DeviceCapabilities {
