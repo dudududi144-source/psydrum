@@ -1,119 +1,41 @@
-// Phase 3 tests — note-router routing table (ARCHITECTURE.md section 3.3) and
-// the B1 fix (unpitched drums ignore note for pitch).
+// Phase 3 tests — note router: routing table, drop reasons, and the B1 fix
+// (unpitched drums never receive a pitch hint, and there is no fallback pitch).
 
 import { describe, it, expect } from 'bun:test'
 import {
-  routeNote,
-  canonicalRoutingTable,
-  STALE_WINDOW_MS,
+  routeNoteEvent,
+  resolveRole,
+  makeChannelResolver,
+  DEFAULT_ROUTING_TABLE,
+  STALE_WINDOW_SEC,
+  MIN_NOTE,
+  MAX_NOTE,
 } from '../../src/psy-drum/note-router'
+import type { RouteContext } from '../../src/psy-drum/note-router'
 import type { NoteEvent } from '../../src/psy-foundation-shim/protocol'
 
-const NOW = 1.0
-const table = canonicalRoutingTable()
-
-function ev(channel: string, velocity: number, note: number, at: number): NoteEvent {
-  return { type: 'note', note: note, velocity: velocity, duration: 1, channel: channel, at: at }
+function ctx(nowSec = 1.0): RouteContext {
+  return {
+    nowSec: nowSec,
+    staleWindowSec: STALE_WINDOW_SEC,
+    resolveChannel: makeChannelResolver(DEFAULT_ROUTING_TABLE),
+  }
 }
 
-describe('note router - on decisions', () => {
-  it('velocity>0 unpitched drum routes to a one-shot on with pitch null', () => {
-    const d = routeNote(ev('kick', 0.8, 36, NOW), NOW, table)
-    expect(d.type).toBe('on')
-    if (d.type === 'on') {
-      expect(d.role).toBe('kick')
-      expect(d.pitched).toBe(false)
-      expect(d.pitch).toBeNull()
-      expect(d.velocity).toBe(0.8)
-      expect(d.at).toBe(NOW)
-    }
-  })
+function ev(overrides: Partial<NoteEvent> = {}): NoteEvent {
+  return {
+    type: 'note',
+    note: 60,
+    velocity: 100,
+    duration: 0.1,
+    channel: 'kick',
+    at: 1.0,
+    ...overrides,
+  }
+}
 
-  it('velocity>0 pitched drum (tom) carries a pitch hint', () => {
-    const d = routeNote(ev('tom', 0.7, 50, NOW), NOW, table)
-    expect(d.type).toBe('on')
-    if (d.type === 'on') {
-      expect(d.role).toBe('tom')
-      expect(d.pitched).toBe(true)
-      expect(d.pitch).toBe(50)
-    }
-  })
-
-  it('velocity>0 pitched drum (ride) carries a pitch hint', () => {
-    const d = routeNote(ev('ride', 0.5, 72, NOW), NOW, table)
-    expect(d.type).toBe('on')
-    if (d.type === 'on') {
-      expect(d.pitched).toBe(true)
-      expect(d.pitch).toBe(72)
-    }
-  })
-
-  it('unpitched drums IGNORE note for pitch (the B1 fix)', () => {
-    const d = routeNote(ev('snare', 0.9, 99, NOW), NOW, table)
-    expect(d.type).toBe('on')
-    if (d.type === 'on') {
-      expect(d.pitched).toBe(false)
-      expect(d.pitch).toBeNull()
-    }
-  })
-})
-
-describe('note router - off decisions', () => {
-  it('velocity==0 routes to note-off with the channel', () => {
-    const d = routeNote(ev('hat-open', 0, 46, NOW), NOW, table)
-    expect(d.type).toBe('off')
-    if (d.type === 'off') {
-      expect(d.role).toBe('hat-open')
-      expect(d.channel).toBe('hat-open')
-      expect(d.at).toBe(NOW)
-    }
-  })
-})
-
-describe('note router - drops', () => {
-  it('unknown channel drops with unknown-channel reason', () => {
-    const d = routeNote(ev('bass', 0.8, 60, NOW), NOW, table)
-    expect(d.type).toBe('drop')
-    if (d.type === 'drop') expect(d.reason).toBe('unknown-channel')
-  })
-
-  it('stale event (older than the window) drops with stale reason', () => {
-    var staleAt = NOW - STALE_WINDOW_MS / 1000 - 0.001
-    const d = routeNote(ev('kick', 0.8, 36, staleAt), NOW, table)
-    expect(d.type).toBe('drop')
-    if (d.type === 'drop') expect(d.reason).toBe('stale')
-  })
-
-  it('event exactly at the stale boundary is NOT stale', () => {
-    var boundaryAt = NOW - STALE_WINDOW_MS / 1000
-    const d = routeNote(ev('kick', 0.8, 36, boundaryAt), NOW, table)
-    expect(d.type).toBe('on')
-  })
-
-  it('future event is not stale', () => {
-    const d = routeNote(ev('kick', 0.8, 36, NOW + 0.5), NOW, table)
-    expect(d.type).toBe('on')
-  })
-
-  it('pitched drum with out-of-range pitch drops with invalid-event', () => {
-    const high = routeNote(ev('tom', 0.7, 200, NOW), NOW, table)
-    expect(high.type).toBe('drop')
-    if (high.type === 'drop') expect(high.reason).toBe('invalid-event')
-
-    const low = routeNote(ev('tom', 0.7, -5, NOW), NOW, table)
-    expect(low.type).toBe('drop')
-    if (low.type === 'drop') expect(low.reason).toBe('invalid-event')
-  })
-
-  it('unpitched drum with out-of-range note still routes (note ignored)', () => {
-    const d = routeNote(ev('kick', 0.8, 999, NOW), NOW, table)
-    expect(d.type).toBe('on')
-    if (d.type === 'on') expect(d.pitch).toBeNull()
-  })
-})
-
-describe('note router - routing table', () => {
-  it('canonicalRoutingTable routes every canonical role to itself', () => {
+describe('routing table', () => {
+  it('DEFAULT_ROUTING_TABLE reaches every canonical role under its own name', () => {
     const roles = [
       'kick',
       'snare',
@@ -125,18 +47,104 @@ describe('note router - routing table', () => {
       'ride',
       'crash',
     ]
-    for (const role of roles) {
-      expect(table.get(role)).toBe(role)
+    for (const r of roles) {
+      expect(resolveRole(DEFAULT_ROUTING_TABLE, r)).toBe(r)
     }
-    expect(table.size).toBe(9)
   })
 
-  it('a custom table can restrict routing (kit-provided data)', () => {
-    const small = new Map<string, 'kick'>([['kick', 'kick']])
-    const okHit = routeNote(ev('kick', 0.8, 36, NOW), NOW, small)
-    expect(okHit.type).toBe('on')
-    const miss = routeNote(ev('snare', 0.8, 38, NOW), NOW, small)
-    expect(miss.type).toBe('drop')
-    if (miss.type === 'drop') expect(miss.reason).toBe('unknown-channel')
+  it('resolveRole returns null for unknown channels', () => {
+    expect(resolveRole(DEFAULT_ROUTING_TABLE, 'bass')).toBeNull()
+    expect(resolveRole(DEFAULT_ROUTING_TABLE, 'hat')).toBeNull()
+    expect(resolveRole(DEFAULT_ROUTING_TABLE, '')).toBeNull()
+  })
+})
+
+describe('trigger routing', () => {
+  it('unpitched drum with velocity>0 triggers with pitch=null (B1 fix)', () => {
+    const d = routeNoteEvent(ev({ channel: 'kick', note: 60 }), ctx())
+    expect(d.kind).toBe('trigger')
+    if (d.kind === 'trigger') {
+      expect(d.role).toBe('kick')
+      expect(d.pitch).toBeNull() // note is NOT used for pitch, no fallback
+      expect(d.velocity).toBe(100)
+    }
+  })
+
+  it('pitched drum (tom) carries the note as a pitch hint', () => {
+    const d = routeNoteEvent(ev({ channel: 'tom', note: 62 }), ctx())
+    expect(d.kind).toBe('trigger')
+    if (d.kind === 'trigger') {
+      expect(d.role).toBe('tom')
+      expect(d.pitch).toBe(62)
+    }
+  })
+
+  it('pitched drum (ride) carries the note as a pitch hint', () => {
+    const d = routeNoteEvent(ev({ channel: 'ride', note: 66 }), ctx())
+    if (d.kind === 'trigger') expect(d.pitch).toBe(66)
+    else expect(true).toBe(false)
+  })
+
+  it('snare/clap/hats/perc/crash all trigger with pitch=null', () => {
+    const unpitched = ['snare', 'clap', 'hat-closed', 'hat-open', 'perc', 'crash']
+    for (const ch of unpitched) {
+      const d = routeNoteEvent(ev({ channel: ch, note: 72 }), ctx())
+      expect(d.kind).toBe('trigger')
+      if (d.kind === 'trigger') expect(d.pitch).toBeNull()
+    }
+  })
+})
+
+describe('note-off routing', () => {
+  it('velocity==0 routes to note-off with the channel attached', () => {
+    const d = routeNoteEvent(ev({ channel: 'tom', velocity: 0, note: 62 }), ctx())
+    expect(d.kind).toBe('note-off')
+    if (d.kind === 'note-off') {
+      expect(d.role).toBe('tom')
+      expect(d.channel).toBe('tom')
+    }
+  })
+})
+
+describe('drop reasons', () => {
+  it('unknown channel drops as unknown-channel', () => {
+    const d = routeNoteEvent(ev({ channel: 'bass' }), ctx())
+    expect(d.kind).toBe('drop')
+    if (d.kind === 'drop') expect(d.reason).toBe('unknown-channel')
+  })
+
+  it('note above 127 drops as invalid-event', () => {
+    const d = routeNoteEvent(ev({ note: MAX_NOTE + 1 }), ctx())
+    expect(d.kind).toBe('drop')
+    if (d.kind === 'drop') expect(d.reason).toBe('invalid-event')
+  })
+
+  it('note below 0 drops as invalid-event', () => {
+    const d = routeNoteEvent(ev({ note: MIN_NOTE - 1 }), ctx())
+    if (d.kind === 'drop') expect(d.reason).toBe('invalid-event')
+    else expect(true).toBe(false)
+  })
+
+  it('velocity above 127 drops as invalid-event', () => {
+    const d = routeNoteEvent(ev({ velocity: 200 }), ctx())
+    if (d.kind === 'drop') expect(d.reason).toBe('invalid-event')
+    else expect(true).toBe(false)
+  })
+
+  it('non-finite note drops as invalid-event', () => {
+    const d = routeNoteEvent(ev({ note: Number.NaN }), ctx())
+    if (d.kind === 'drop') expect(d.reason).toBe('invalid-event')
+    else expect(true).toBe(false)
+  })
+
+  it('event older than the stale window drops as stale', () => {
+    const d = routeNoteEvent(ev({ at: 0.9, }), ctx(1.0)) // 100ms old > 50ms window
+    expect(d.kind).toBe('drop')
+    if (d.kind === 'drop') expect(d.reason).toBe('stale')
+  })
+
+  it('event within the stale window still routes', () => {
+    const d = routeNoteEvent(ev({ at: 0.97 }), ctx(1.0)) // 30ms old < 50ms window
+    expect(d.kind).toBe('trigger')
   })
 })
