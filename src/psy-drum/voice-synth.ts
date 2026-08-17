@@ -34,6 +34,40 @@ export function makeNoiseBuffer(ctx: BaseAudioContext, seconds: number, seed: nu
   return buf
 }
 
+// ─── drive / saturation (the psy punch, patch-driven) ───────────────────────
+
+// Deterministic tanh soft-clip curve. Higher driveDb => harder clip => more bite.
+export function makeDriveCurve(driveDb: number): Float32Array {
+  const n = 1024
+  const curve = new Float32Array(n)
+  const k = Math.max(1, Math.pow(10, driveDb / 20))
+  const norm = Math.tanh(k)
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1
+    curve[i] = Math.tanh(x * k) / norm
+  }
+  return curve
+}
+
+function makeDrive(ctx: BaseAudioContext, driveDb: number): WaveShaperNode | null {
+  if (!(driveDb > 0)) return null
+  const ws = ctx.createWaveShaper()
+  ws.curve = makeDriveCurve(driveDb)
+  ws.oversample = '2x'
+  return ws
+}
+
+// Route `from` through an optional drive stage into `to`.
+function connectThroughDrive(ctx: BaseAudioContext, from: AudioNode, to: AudioNode, driveDb: number): void {
+  const drive = makeDrive(ctx, driveDb)
+  if (drive === null) {
+    from.connect(to)
+  } else {
+    from.connect(drive)
+    drive.connect(to)
+  }
+}
+
 // ─── patch readers (sound design = data) ────────────────────────────────────
 
 function patchAttackMs(p: DrumPatch, fallback: number): number {
@@ -74,7 +108,7 @@ export function buildKick(sc: SynthCtx): void {
   const g = envGain(ctx, now, params.gain, patchAttackMs(patch, 1), patchDecayMs(patch, 215), duration)
   osc.connect(lpf)
   lpf.connect(g)
-  g.connect(bus)
+  connectThroughDrive(ctx, g, bus, patch.driveDb === undefined ? 0 : patch.driveDb)
   osc.start(now)
   osc.stop(now + duration + 0.05)
 }
@@ -95,7 +129,7 @@ function buildNoiseVoice(sc: SynthCtx, filterType: BiquadFilterType, defaultHz: 
   const g = envGain(ctx, now, sc.params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
   src.connect(f)
   f.connect(g)
-  g.connect(bus)
+  connectThroughDrive(ctx, g, bus, patch.driveDb === undefined ? 0 : patch.driveDb)
   src.start(now)
   src.stop(now + sc.duration + 0.05)
 }
@@ -109,7 +143,7 @@ function buildTone(sc: SynthCtx, defaultHz: number, wave: OscillatorType, attack
   osc.frequency.value = hz
   const g = envGain(ctx, now, params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
   osc.connect(g)
-  g.connect(bus)
+  connectThroughDrive(ctx, g, bus, patch.driveDb === undefined ? 0 : patch.driveDb)
   osc.start(now)
   osc.stop(now + sc.duration + 0.05)
 }
