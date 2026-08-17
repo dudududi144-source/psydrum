@@ -56,3 +56,6 @@ export { makeReverbIR } from './fx'
 
 export { GROOVE_TEMPLATES, parsePattern, findGroove } from './grooves'
 export type { GrooveTemplate } from './grooves'
+
+export { renderPsyKickSamples, renderPsyKickInto } from './kick-dsp'
+export type { KickParams } from './kick-dsp'
