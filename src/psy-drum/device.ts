@@ -130,6 +130,11 @@ export class DrumDevice implements PsyDevice {
     return reportLatencyMs(this.latency)
   }
 
+  // Expose counters for the factory's kit-load path (main-thread only).
+  getCounters(): DrumCounters {
+    return this.counters
+  }
+
   onTransport(transport: MusicalTransport): void {
     // Snapshot only — the device never owns or drives the transport.
     this.transport = transport
