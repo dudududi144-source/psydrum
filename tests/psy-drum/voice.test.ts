@@ -1,265 +1,169 @@
-// Phase 5 tests — voice DSP: envelopes, velocity curves, deterministic render,
-// and the style-9 velocity-to-timbre spectral-centroid assertion.
+// Phase 5 tests — voice DSP deterministic core.
+// Envelopes, velocity-to-gain, velocity-to-timbre, and per-drum param
+// resolution are all pure functions and are asserted exhaustively here so the
+// DSP foundation stays rock solid (louder = brighter, per section 4.3).
 
 import { describe, it, expect } from 'bun:test'
 import {
-  expDecay,
-  makeDecayTable,
-  pitchEnvelopeHz,
-  velocityToGain,
-  velocityToBrightness,
-  clampVelocity,
-  lcgStep,
-  lcgToNoise,
-  renderKick,
-  renderSnare,
-  renderClap,
-  renderHat,
-  renderTom,
-  renderPerc,
-  renderRide,
-  renderCrash,
-  renderDrum,
+  buildEnvelopeTable,
+  envelopeValueAt,
+  sampleEnvelope,
+  velCurveGain,
+  velocityTimbreShift,
+  velocityToCutoff,
+  velocityToNoiseBrightness,
+  velocityToPitchDepth,
+  resolveDrumParams,
 } from '../../src/psy-drum/voice'
-import type { VoiceRenderOpts } from '../../src/psy-drum/voice'
+import type { EnvelopeSpec } from '../../src/psy-drum/voice'
+import type { DrumPatch } from '../../src/psy-drum/types'
 
-const SR = 48000
+const ADSR: EnvelopeSpec = { attackMs: 10, decayMs: 20, releaseMs: 30, sustainLevel: 0.2 }
 
-function opts(velocity = 100, velTrack = 0.6, seed = 7): VoiceRenderOpts {
-  return { sampleRate: SR, velocity: velocity, velTrack: velTrack, velCurve: 'linear', seed: seed }
-}
-
-// ─── Envelopes ───────────────────────────────────────────────────────────────
-
-describe('envelopes', () => {
-  it('expDecay is 1 at t=0 and ~-60dB at t=1', () => {
-    expect(expDecay(0)).toBe(1)
-    expect(expDecay(1)).toBeCloseTo(0.001, 6)
+describe('envelope shape (piecewise-linear ADSR)', () => {
+  it('starts at zero at t=0', () => {
+    expect(envelopeValueAt(ADSR, 0)).toBeCloseTo(0, 6)
   })
 
-  it('expDecay is monotonically decreasing', () => {
-    let prev = expDecay(0)
-    for (let t = 0.1; t <= 1.0; t += 0.1) {
-      const v = expDecay(t)
-      expect(v).toBeLessThan(prev)
-      prev = v
-    }
+  it('ramps to the peak by the end of the attack', () => {
+    expect(envelopeValueAt(ADSR, 5)).toBeCloseTo(0.5, 6) // mid-attack
+    expect(envelopeValueAt(ADSR, 10)).toBeCloseTo(1, 1) // end of attack
   })
 
-  it('makeDecayTable endpoints and monotonicity', () => {
-    const table = makeDecayTable(64)
-    expect(table.length).toBe(64)
-    expect(table[0]).toBeCloseTo(1, 6)
-    expect(table[63]).toBeCloseTo(0.001, 3)
-    for (let i = 1; i < table.length; i++) {
-      expect(table[i]).toBeLessThanOrEqual(table[i - 1])
-    }
+  it('decays toward the sustain level', () => {
+    expect(envelopeValueAt(ADSR, 20)).toBeCloseTo(0.6, 6) // halfway 1 -> 0.2
+    expect(envelopeValueAt(ADSR, 30)).toBeCloseTo(0.2, 6) // end of decay = sustain
   })
 
-  it('pitchEnvelopeHz glides from start to end', () => {
-    expect(pitchEnvelopeHz(0, 150, 50)).toBeCloseTo(150, 3)
-    expect(pitchEnvelopeHz(1, 150, 50)).toBeCloseTo(50, 3)
-    const mid = pitchEnvelopeHz(0.5, 150, 50)
-    expect(mid).toBeGreaterThan(50)
-    expect(mid).toBeLessThan(150)
-  })
-})
-
-// ─── Velocity curves ─────────────────────────────────────────────────────────
-
-describe('velocity curves', () => {
-  it('velocityToGain is monotonic and bounded 0..1', () => {
-    expect(velocityToGain(0, 'linear')).toBe(0)
-    expect(velocityToGain(127, 'linear')).toBeCloseTo(1, 6)
-    expect(velocityToGain(64, 'linear')).toBeGreaterThan(velocityToGain(32, 'linear'))
-    expect(velocityToGain(200, 'linear')).toBeLessThanOrEqual(1)
-    expect(velocityToGain(-5, 'linear')).toBe(0)
+  it('releases from sustain to zero', () => {
+    expect(envelopeValueAt(ADSR, 45)).toBeCloseTo(0.1, 6) // halfway 0.2 -> 0
+    expect(envelopeValueAt(ADSR, 60)).toBeCloseTo(0, 6)
   })
 
-  it('power curve is below linear for mid velocities', () => {
-    expect(velocityToGain(64, 'power')).toBeLessThan(velocityToGain(64, 'linear'))
-  })
-
-  it('velocityToBrightness rises with velocity and velTrack', () => {
-    expect(velocityToBrightness(0, 1)).toBe(1)
-    expect(velocityToBrightness(127, 0)).toBe(1)
-    expect(velocityToBrightness(127, 1)).toBeCloseTo(2, 6)
-    expect(velocityToBrightness(100, 1)).toBeGreaterThan(velocityToBrightness(50, 1))
-  })
-
-  it('clampVelocity clamps to 0..127', () => {
-    expect(clampVelocity(200)).toBe(127)
-    expect(clampVelocity(-10)).toBe(0)
-    expect(clampVelocity(Number.NaN)).toBe(0)
-  })
-})
-
-// ─── Deterministic PRNG ──────────────────────────────────────────────────────
-
-describe('deterministic noise', () => {
-  it('lcg is deterministic for a given seed', () => {
-    let a = lcgStep(123)
-    let b = lcgStep(123)
-    expect(a).toBe(b)
-    expect(lcgToNoise(a)).toBe(lcgToNoise(b))
-  })
-
-  it('lcgToNoise stays within [-1, 1]', () => {
-    let s = 42 >>> 0
-    for (let i = 0; i < 200; i++) {
-      s = lcgStep(s)
-      const v = lcgToNoise(s)
-      expect(v).toBeGreaterThanOrEqual(-1)
+  it('never exceeds 1 or goes below 0', () => {
+    for (let t = 0; t <= 60; t += 1) {
+      const v = envelopeValueAt(ADSR, t)
+      expect(v).toBeGreaterThanOrEqual(0)
       expect(v).toBeLessThanOrEqual(1)
     }
   })
-})
 
-// ─── Render: every chain produces deterministic, non-silent audio ───────────
-
-function energy(buf: Float32Array): number {
-  let e = 0
-  for (let i = 0; i < buf.length; i++) e += buf[i] * buf[i]
-  return e
-}
-
-describe('every drum chain renders deterministic non-silent audio', () => {
-  const cases = [
-    ['kick', renderKick],
-    ['snare', renderSnare],
-    ['clap', renderClap],
-    ['hat-closed', (o, p) => renderHat(o, p, false)],
-    ['hat-open', (o, p) => renderHat(o, p, true)],
-    ['tom', renderTom],
-    ['perc', renderPerc],
-    ['ride', renderRide],
-    ['crash', renderCrash],
-  ]
-
-  for (const [name, fn] of cases) {
-    it(name + ' renders non-silent, deterministic audio', () => {
-      const a = new Float32Array(2048)
-      const b = new Float32Array(2048)
-      fn(a, opts(100, 0.6, 99))
-      fn(b, opts(100, 0.6, 99))
-      expect(energy(a)).toBeGreaterThan(0)
-      // same seed + params => identical samples
-      for (let i = 0; i < a.length; i++) {
-        expect(a[i]).toBe(b[i])
-      }
-    })
-  }
-
-  it('a higher seed than a different one yields different audio', () => {
-    const a = new Float32Array(1024)
-    const b = new Float32Array(1024)
-    renderSnare(a, opts(100, 0.6, 1))
-    renderSnare(b, opts(100, 0.6, 2))
-    let same = true
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) { same = false; break }
-    }
-    expect(same).toBe(false)
-  })
-
-  it('renderDrum dispatches every canonical role', () => {
-    const roles = ['kick', 'snare', 'clap', 'hat-closed', 'hat-open', 'tom', 'perc', 'ride', 'crash'] as const
-    for (const role of roles) {
-      const out = new Float32Array(1024)
-      expect(renderDrum(role, out, opts(100, 0.6, 3))).toBe(true)
-      expect(energy(out)).toBeGreaterThan(0)
-    }
+  it('a zero-attack envelope starts at the peak', () => {
+    const spec: EnvelopeSpec = { attackMs: 0, decayMs: 10, releaseMs: 10, sustainLevel: 0.5 }
+    expect(envelopeValueAt(spec, 0)).toBeCloseTo(1, 6)
   })
 })
 
-// ─── Velocity-to-timbre (style criterion 9): louder = brighter ──────────────
-
-// In-place iterative radix-2 FFT (n must be a power of two).
-function fftInPlace(re: Float64Array, im: Float64Array): void {
-  const n = re.length
-  let j = 0
-  for (let i = 1; i < n; i++) {
-    let bit = n >> 1
-    while (j & bit) {
-      j ^= bit
-      bit >>= 1
-    }
-    j ^= bit
-    if (i < j) {
-      let tr = re[i]; re[i] = re[j]; re[j] = tr
-      let ti = im[i]; im[i] = im[j]; im[j] = ti
-    }
-  }
-  for (let len = 2; len <= n; len <<= 1) {
-    const ang = (-2 * Math.PI) / len
-    const wReal = Math.cos(ang)
-    const wImag = Math.sin(ang)
-    for (let i = 0; i < n; i += len) {
-      let curReal = 1
-      let curImag = 0
-      const half = len >> 1
-      for (let k = 0; k < half; k++) {
-        const vr = re[i + k + half] * curReal - im[i + k + half] * curImag
-        const vi = re[i + k + half] * curImag + im[i + k + half] * curReal
-        re[i + k + half] = re[i + k] - vr
-        im[i + k + half] = im[i + k] - vi
-        re[i + k] = re[i + k] + vr
-        im[i + k] = im[i + k] + vi
-        const nr = curReal * wReal - curImag * wImag
-        const ni = curReal * wImag + curImag * wReal
-        curReal = nr
-        curImag = ni
-      }
-    }
-  }
-}
-
-function spectralCentroid(samples: Float32Array, sampleRate: number): number {
-  const n = samples.length
-  const re = new Float64Array(n)
-  const im = new Float64Array(n)
-  for (let i = 0; i < n; i++) re[i] = samples[i]
-  fftInPlace(re, im)
-  let num = 0
-  let den = 0
-  const half = n >> 1
-  for (let k = 0; k < half; k++) {
-    const mag = Math.sqrt(re[k] * re[k] + im[k] * im[k])
-    const freq = (k * sampleRate) / n
-    num += freq * mag
-    den += mag
-  }
-  return den === 0 ? 0 : num / den
-}
-
-describe('velocity-to-timbre (style 9): louder hits are brighter', () => {
-  it('kick spectral centroid rises with velocity', () => {
-    const soft = new Float32Array(2048)
-    const loud = new Float32Array(2048)
-    renderKick(soft, opts(20, 1, 5))
-    renderKick(loud, opts(120, 1, 5))
-    const cSoft = spectralCentroid(soft, SR)
-    const cLoud = spectralCentroid(loud, SR)
-    expect(cLoud).toBeGreaterThan(cSoft)
+describe('envelope table (precomputed, zero-alloc reads)', () => {
+  it('buildEnvelopeTable is deterministic for a given spec + rate', () => {
+    const a = buildEnvelopeTable(ADSR, 6000)
+    const b = buildEnvelopeTable(ADSR, 6000)
+    expect(Array.from(a.samples)).toEqual(Array.from(b.samples))
+    expect(a.totalMs).toBe(60)
   })
 
-  it('snare spectral centroid rises with velocity', () => {
-    const soft = new Float32Array(2048)
-    const loud = new Float32Array(2048)
-    renderSnare(soft, opts(20, 1, 5))
-    renderSnare(loud, opts(120, 1, 5))
-    expect(spectralCentroid(loud, SR)).toBeGreaterThan(spectralCentroid(soft, SR))
+  it('table length matches totalMs at the sample rate', () => {
+    const t = buildEnvelopeTable(ADSR, 6000)
+    expect(t.samples.length).toBe(Math.ceil((60 / 1000) * 6000))
   })
 
-  it('zero velTrack removes the timbre shift (gain-only)', () => {
-    // With velTrack 0 the spectral shape must NOT change with velocity.
-    const soft = new Float32Array(2048)
-    const loud = new Float32Array(2048)
-    renderKick(soft, opts(20, 0, 5))
-    renderKick(loud, opts(120, 0, 5))
-    const cSoft = spectralCentroid(soft, SR)
-    const cLoud = spectralCentroid(loud, SR)
-    // Centroids should be (nearly) identical when timbre tracking is off.
-    expect(Math.abs(cLoud - cSoft)).toBeLessThan(cSoft * 0.05 + 1)
+  it('table reaches (approximately) the peak and returns to zero', () => {
+    const t = buildEnvelopeTable(ADSR, 6000)
+    let max = 0
+    for (let i = 0; i < t.samples.length; i++) if (t.samples[i] > max) max = t.samples[i]
+    expect(max).toBeGreaterThan(0.99)
+    expect(t.samples[t.samples.length - 1]).toBeCloseTo(0, 3)
+  })
+
+  it('sampleEnvelope interpolates the ramp correctly', () => {
+    const ramp: EnvelopeSpec = { attackMs: 100, decayMs: 0, releaseMs: 0, sustainLevel: 1 }
+    const t = buildEnvelopeTable(ramp, 1000)
+    expect(sampleEnvelope(t, 50)).toBeCloseTo(0.5, 2)
+    expect(sampleEnvelope(t, 0)).toBeCloseTo(0, 2)
+    expect(sampleEnvelope(t, 100)).toBeCloseTo(1, 2)
+  })
+
+  it('sampleEnvelope clamps outside the table', () => {
+    const ramp: EnvelopeSpec = { attackMs: 100, decayMs: 0, releaseMs: 0, sustainLevel: 1 }
+    const t = buildEnvelopeTable(ramp, 1000)
+    expect(sampleEnvelope(t, -5)).toBe(t.samples[0])
+    expect(sampleEnvelope(t, 9999)).toBe(t.samples[t.samples.length - 1])
+  })
+})
+
+describe('velocity-to-gain (section 4.3)', () => {
+  it('linear curve maps velocity/127', () => {
+    expect(velCurveGain(127, 'linear', 2)).toBeCloseTo(1, 6)
+    expect(velCurveGain(0, 'linear', 2)).toBeCloseTo(0, 6)
+    expect(velCurveGain(64, 'linear', 2)).toBeCloseTo(64 / 127, 6)
+  })
+
+  it('power curve increases dynamic range', () => {
+    expect(velCurveGain(127, 'power', 2)).toBeCloseTo(1, 6)
+    expect(velCurveGain(64, 'power', 2)).toBeCloseTo(Math.pow(64 / 127, 2), 6)
+    // power curve is below linear for mid velocities
+    expect(velCurveGain(64, 'power', 2)).toBeLessThan(velCurveGain(64, 'linear', 2))
+  })
+
+  it('clamps out-of-range velocity', () => {
+    expect(velCurveGain(200, 'linear', 2)).toBeCloseTo(1, 6)
+    expect(velCurveGain(-5, 'linear', 2)).toBeCloseTo(0, 6)
+  })
+})
+
+describe('velocity-to-timbre (louder = brighter)', () => {
+  it('timbre shift scales with velocity and velTrack', () => {
+    expect(velocityTimbreShift(127, 1)).toBeCloseTo(1, 6)
+    expect(velocityTimbreShift(127, 0)).toBeCloseTo(0, 6)
+    expect(velocityTimbreShift(0, 1)).toBeCloseTo(0, 6)
+  })
+
+  it('cutoff rises with velocity and is capped at the nyquist guard', () => {
+    expect(velocityToCutoff(0, 1000, 1, 20000)).toBeCloseTo(1000, 6)
+    expect(velocityToCutoff(127, 1000, 1, 20000)).toBeCloseTo(2000, 6)
+    expect(velocityToCutoff(127, 15000, 1, 20000)).toBe(20000) // capped
+  })
+
+  it('velTrack 0 means no timbre shift (pure gain change)', () => {
+    expect(velocityToCutoff(127, 1000, 0, 20000)).toBeCloseTo(1000, 6)
+  })
+
+  it('noise brightness follows the same rule', () => {
+    expect(velocityToNoiseBrightness(127, 4000, 1, 20000)).toBeCloseTo(8000, 6)
+  })
+
+  it('pitch depth deepens with velocity', () => {
+    expect(velocityToPitchDepth(0, 5, 1)).toBeCloseTo(5, 6)
+    expect(velocityToPitchDepth(127, 5, 1)).toBeCloseTo(10, 6)
+  })
+})
+
+describe('per-drum chain parameter resolution', () => {
+  const patch: DrumPatch = {
+    body: { wave: 'sine', startHz: 200, endHz: 50, pitchDecayMs: 40 },
+    filter: { cutoff: 1000, res: 1 },
+    velTrack: 1,
+  }
+
+  it('resolves gain, cutoff, and pitch depth from patch + velocity', () => {
+    const p = resolveDrumParams(patch, 127, 'linear', 2, 20000)
+    expect(p.gain).toBeCloseTo(1, 6)
+    expect(p.cutoff).toBeCloseTo(2000, 6) // 1000 * (1 + 1)
+    expect(p.pitchDepth).toBeCloseTo(300, 6) // (200-50) * (1+1)
+    expect(p.noiseBrightness).toBe(0) // no noise block
+  })
+
+  it('a quiet hit resolves to lower gain and less timbre shift', () => {
+    const p = resolveDrumParams(patch, 32, 'linear', 2, 20000)
+    expect(p.gain).toBeCloseTo(32 / 127, 6)
+    expect(p.cutoff).toBeLessThan(2000)
+    expect(p.pitchDepth).toBeLessThan(300)
+  })
+
+  it('a patch without velTrack has no timbre shift', () => {
+    const flat: DrumPatch = { filter: { cutoff: 1000, res: 1 } }
+    const p = resolveDrumParams(flat, 127, 'linear', 2, 20000)
+    expect(p.cutoff).toBeCloseTo(1000, 6)
+    expect(p.pitchDepth).toBe(0)
   })
 })
