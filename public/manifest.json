@@ -1,0 +1,19 @@
+{
+  "name": "PSYDRUM Pro — Psytrance Drum Machine",
+  "short_name": "PSYDRUM",
+  "description": "Psytrance drum machine - analog-modeled drum synthesis, sequencer, kits, FX.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0d0f14",
+  "theme_color": "#12141a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
