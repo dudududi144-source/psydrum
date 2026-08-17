@@ -2,7 +2,23 @@
 
 **PSY Drum Device** — the canonical drum realization device for the PSY family. Pure HOW layer, third concrete sound-producing device (after `psy-sampler` and `psysynth`). Analog-modeled drum synthesis, drum-specific organization (choke groups, kits, groove rendering), MIDI-capable, deterministic, psytrance-grade.
 
-> **Status: BUILDING — phase 3 landed.** Phase 0 (scaffold), phase 1 (verbatim foundation shim), phase 2 (canonical drum types, counters, measured latency), and phase 3 (B1-enforcing note-router + audit-B1 static-analysis hard gate) are green. Read `ARCHITECTURE.md` first, then `ARCHITECTURE-STYLE.md`, then `PSY-DRUM-IMPLEMENTATION-PLAN.md` (the phased plan; every phase ends green).
+> **Status: BUILDING — phase 9 landed.** Phases 0–9 are green: scaffold, verbatim foundation shim, canonical types/counters/latency, B1-enforcing note-router + audit-B1 hard gate, choke groups, voice DSP core, voice pool, kit library, variance rules (determinism), and MIDI map + learn. Next: phase 10 (device assembly + factory). Read `ARCHITECTURE.md` first, then `ARCHITECTURE-STYLE.md`, then `PSY-DRUM-IMPLEMENTATION-PLAN.md` (the phased plan; every phase ends green).
+
+## What's built so far (phases 0–9)
+
+| Layer | Module | Role |
+|---|---|---|
+| Foundation shim | `src/psy-foundation-shim/*` | Verbatim protocol/transport/device/host contracts, pinned to foundation `4ae95d3`, byte-equivalence guarded |
+| Types | `src/psy-drum/types.ts` | Canonical `DrumRole`, `DrumPatch`, `DrumConfig`, `VoiceState`, `ChokeGroup`, role caps |
+| Observability | `src/psy-drum/counters.ts` | Zero-alloc event/voice/steal/choke counters (no logging in audio path) |
+| Latency | `src/psy-drum/latency.ts` | Measured baseLatency + trigger overhead, reported once (audit B9) |
+| Routing | `src/psy-drum/note-router.ts` | `NoteEvent` -> trigger/note-off/drop decisions; unpitched drums ignore note-for-pitch (B1-enforced) |
+| Choke | `src/psy-drum/choke.ts` | Hat exclusive-pair + crash/ride self-choke state machine, < 3ms choke ramp |
+| Voice DSP | `src/psy-drum/voice.ts` | Precomputed envelope tables, velocity-to-gain/timbre, per-drum param resolution |
+| Voice pool | `src/psy-drum/voice-pool.ts` | Preallocated pool, deterministic steal, per-drum budget caps, zero-alloc hot path |
+| Kits | `src/psy-drum/kit-library.ts` | Kit manifest validation, provenance enforcement, reject-at-load, sample fallback |
+| Determinism | `src/psy-drum/variance-rules.ts` | Single seeded mulberry32; humanize/round-robin/jitter vary, pitch/choke/routing never do |
+| MIDI | `src/psy-drum/midi-map.ts` | GM drum note map (overridable data), CC table, MIDI-learn state (no WebMIDI in device) |
 
 ## What PSYDRUM is
 
