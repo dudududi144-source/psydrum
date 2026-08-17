@@ -113,7 +113,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -302,8 +302,14 @@ body {
     if(samplesOn&&!samplesLoaded){
       samplesBtn.textContent='samples: loading…'
       for(const[label,note,channel]of DRUMS){
-        const dur=(channel==='crash'||channel==='ride')?0.5:0.25
-        const buf=await renderDrumSample(channel,ctx.sampleRate,dur)
+        let buf
+        if(channel==='kick'){
+          // per-sample psy kick DSP (FM click + saturation + sharp pitch drop)
+          buf=renderPsyKickInto(ctx,{startHz:168,endHz:44,pitchDecayMs:42,clickMs:2,driveDb:3.5,sampleRate:ctx.sampleRate,durationSec:0.25})
+        }else{
+          const dur=(channel==='crash'||channel==='ride')?0.5:0.25
+          buf=await renderDrumSample(channel,ctx.sampleRate,dur)
+        }
         device.setSample(channel,buf); device.enableSampleLayer(channel,0.45)
       }
       samplesLoaded=true
