@@ -38,6 +38,7 @@ var requiredFiles = [
   'src/psy-drum/voice.ts',
   'src/psy-drum/voice-synth.ts',
   'src/psy-drum/default-kit.ts',
+  'tests/psy-drum/default-kit.test.ts',
   'tests/psy-drum/voice.test.ts',
   'src/psy-drum/voice-pool.ts',
   'tests/psy-drum/voice-pool.test.ts',
