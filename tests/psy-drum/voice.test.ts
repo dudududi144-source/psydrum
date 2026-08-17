@@ -124,7 +124,7 @@ function energy(buf: Float32Array): number {
 }
 
 describe('every drum chain renders deterministic non-silent audio', () => {
-  const cases: Array<[string, (out: Float32Array, o: VoiceRenderOpts) => void)> = [
+  const cases = [
     ['kick', renderKick],
     ['snare', renderSnare],
     ['clap', renderClap],
