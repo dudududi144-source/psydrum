@@ -1,354 +1,180 @@
-// PSYDRUM voice DSP (phase 5, ARCHITECTURE.md sections 4.1 + 4.3).
+// PSYDRUM voice DSP — deterministic, zero-allocation core (phase 5).
 //
-// Pure, DETERMINISTIC analog-modeled drum synthesis that renders into
-// caller-provided Float32Array buffers. There is NO Web Audio dependency in
-// this core, so it is fully testable headless (bun). The device (phase 10)
-// realizes these same chains as Web Audio nodes for real-time playback.
+// This module is the TESTABLE FOUNDATION of the analog-modeled drum chains
+// (ARCHITECTURE.md section 4.1 / 4.3). It contains the pure DSP math that the
+// per-drum chains consume:
+//   - precomputed envelope tables + per-sample interpolation (zero alloc reads)
+//   - velocity-to-gain curves (linear / power)
+//   - velocity-to-timbre (louder = brighter: cutoff / noise brightness / pitch
+//     depth scaled by velTrack)
+//   - per-drum chain parameter resolution (DrumPatch + velocity -> params)
 //
-// Zero-allocation-on-trigger principle (4.1): the render loops use only
-// arithmetic plus a fast inline PRNG; envelope tables are precomputed by
-// makeDecayTable and reused. No arrays or closures are created per trigger.
-//
-// Velocity-to-timbre (4.3): velocity drives BOTH gain (velocityToGain) and
-// brightness (velocityToBrightness) — louder hits are brighter, not just
-// louder. The brightness factor scales the high-frequency transient/click and
-// the noise-band level, which is what the style-9 spectral-centroid test
-// asserts.
+// The node-graph realization (oscillators / filters / VCA on a BaseAudioContext)
+// is a thin browser layer that consumes these resolved params; it is exercised
+// by the OfflineAudioContext render proof in the host, not here. Everything in
+// THIS file is pure and unit-tested so the foundation stays rock solid.
 
-import type { DrumRole } from './types'
+import type { DrumPatch } from './types'
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Envelope tables (precomputed; per-sample reads never allocate) ──────────
 
-const TWO_PI = Math.PI * 2
-// exp(-DECAY_TO_60DB) === 0.001, i.e. -60 dB at normalized progress 1.
-export const DECAY_TO_60DB = 6.907755278982137
+export interface EnvelopeSpec {
+  attackMs: number
+  decayMs: number
+  releaseMs: number
+  sustainLevel: number // 0..1
+}
 
-// ─── Velocity curves (4.3) ───────────────────────────────────────────────────
+export interface EnvelopeTable {
+  samples: Float32Array
+  sampleRate: number
+  totalMs: number
+}
+
+function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v
+}
+
+// Build a piecewise-linear ADSR table over attack+decay+release milliseconds.
+// Drums use a fast attack and a decay toward (usually low) sustain; release
+// tails the end. Deterministic for a given spec + sampleRate.
+export function buildEnvelopeTable(spec: EnvelopeSpec, sampleRate: number): EnvelopeTable {
+  const attackMs = Math.max(0, spec.attackMs)
+  const decayMs = Math.max(0, spec.decayMs)
+  const releaseMs = Math.max(0, spec.releaseMs)
+  const sustain = clamp01(spec.sustainLevel)
+  const totalMs = attackMs + decayMs + releaseMs
+
+  const numSamples = Math.max(1, Math.ceil((totalMs / 1000) * sampleRate))
+  const samples = new Float32Array(numSamples)
+
+  for (let i = 0; i < numSamples; i++) {
+    const tMs = numSamples === 1 ? 0 : (i / (numSamples - 1)) * totalMs
+    samples[i] = envelopeValueAt(spec, tMs)
+  }
+
+  return { samples: samples, sampleRate: sampleRate, totalMs: totalMs }
+}
+
+// Piecewise-linear ADSR value at time tMs (pure; used by buildEnvelopeTable and
+// directly testable).
+export function envelopeValueAt(spec: EnvelopeSpec, tMs: number): number {
+  const attackMs = Math.max(0, spec.attackMs)
+  const decayMs = Math.max(0, spec.decayMs)
+  const releaseMs = Math.max(0, spec.releaseMs)
+  const sustain = clamp01(spec.sustainLevel)
+  const t = Math.max(0, tMs)
+
+  if (t < attackMs) {
+    // Attack: 0 -> 1
+    return attackMs === 0 ? 1 : t / attackMs
+  }
+
+  const decayEnd = attackMs + decayMs
+  if (t < decayEnd) {
+    // Decay: 1 -> sustain
+    const p = decayMs === 0 ? 1 : (t - attackMs) / decayMs
+    return 1 - (1 - sustain) * p
+  }
+
+  // Release: sustain -> 0
+  const p = releaseMs === 0 ? 1 : (t - decayEnd) / releaseMs
+  return sustain * (1 - Math.min(1, p))
+}
+
+// Per-sample LINEAR interpolation into a precomputed table. Zero allocation:
+// reads only. Returns 0 outside the table.
+export function sampleEnvelope(table: EnvelopeTable, tMs: number): number {
+  const n = table.samples.length
+  if (n === 0 || table.totalMs <= 0) return 0
+  if (tMs <= 0) return table.samples[0]
+  if (tMs >= table.totalMs) return table.samples[n - 1]
+
+  const pos = (tMs / table.totalMs) * (n - 1)
+  const i0 = Math.floor(pos)
+  const i1 = Math.min(n - 1, i0 + 1)
+  const frac = pos - i0
+  const a = table.samples[i0]
+  const b = table.samples[i1]
+  return a + (b - a) * frac
+}
+
+// ─── Velocity-to-gain (section 4.3) ─────────────────────────────────────────
 
 export type VelCurveKind = 'linear' | 'power'
 
-export function clampVelocity(velocity: number): number {
-  if (!Number.isFinite(velocity)) return 0
-  return Math.max(0, Math.min(127, velocity))
-}
+export const MIN_VELOCITY = 0
+export const MAX_VELOCITY = 127
 
-// MIDI velocity (0..127) -> gain (0..1). 'power' gives a more expressive curve.
-export function velocityToGain(velocity: number, curve: VelCurveKind): number {
-  const v = clampVelocity(velocity) / 127
-  return curve === 'power' ? v * v : v
-}
-
-// Brightness multiplier (>= 1) applied to high-frequency content. Higher
-// velocity and higher velTrack depth => brighter hit (the "louder = brighter"
-// drum behavior). At velocity 0 or velTrack 0 this is 1 (neutral).
-export function velocityToBrightness(velocity: number, velTrack: number): number {
-  const v = clampVelocity(velocity) / 127
-  const depth = Math.max(0, Math.min(1, velTrack))
-  return 1 + depth * v
-}
-
-// ─── Envelopes ───────────────────────────────────────────────────────────────
-
-// Exponential decay: 1 at t=0, ~0.001 (-60 dB) at t=1, keeps decaying for t>1.
-export function expDecay(t: number): number {
-  if (t <= 0) return 1
-  return Math.exp(-DECAY_TO_60DB * t)
-}
-
-// Precomputed decay table (allocated ONCE at patch load, reused on trigger).
-// table[0] === 1, table[length-1] ~ 0.001.
-export function makeDecayTable(length: number): Float32Array {
-  const n = Math.max(2, Math.floor(length))
-  const table = new Float32Array(n)
-  for (var i = 0; i < n; i++) {
-    table[i] = expDecay(i / (n - 1))
+// Map MIDI velocity (0..127) to a gain 0..1. 'power' applies an exponent >1 so
+// soft hits are softer and loud hits punch harder (more dynamic feel).
+export function velCurveGain(velocity: number, curve: VelCurveKind, powerExponent: number): number {
+  const v = clamp01(velocity / MAX_VELOCITY)
+  if (curve === 'power') {
+    const exp = powerExponent > 0 ? powerExponent : 1
+    return Math.pow(v, exp)
   }
-  return table
+  return v
 }
 
-// Pitch envelope (kick/tom body): exponential glide startHz -> endHz as
-// progress goes 0 -> 1. Returns the instantaneous frequency in Hz.
-export function pitchEnvelopeHz(progress: number, startHz: number, endHz: number): number {
-  const p = Math.max(0, Math.min(1, progress))
-  // Exponential interpolation keeps the musical (log) pitch drop linear.
-  const s = Math.max(1, startHz)
-  const e = Math.max(1, endHz)
-  return s * Math.pow(e / s, p)
+// ─── Velocity-to-timbre (section 4.3: louder = brighter) ─────────────────────
+
+// Higher velocity raises a parameter toward its ceiling by velTrack amount.
+// velTrack 0 => no timbre shift (pure gain change); velTrack 1 => full shift.
+export function velocityTimbreShift(velocity: number, velTrack: number): number {
+  const v = clamp01(velocity / MAX_VELOCITY)
+  const track = clamp01(velTrack)
+  return v * track
 }
 
-// ─── Deterministic PRNG (fast inline LCG, zero allocation) ──────────────────
-
-// One LCG step. Pass the returned state into the next call.
-export function lcgStep(state: number): number {
-  return (Math.imul(state, 1664525) + 1013904223) >>> 0
+// Filter cutoff rises with velocity: base * (1 + shift). Capped at nyquistGuard.
+export function velocityToCutoff(velocity: number, baseCutoff: number, velTrack: number, nyquistGuard: number): number {
+  const shift = velocityTimbreShift(velocity, velTrack)
+  const cutoff = baseCutoff * (1 + shift)
+  return Math.min(cutoff, nyquistGuard)
 }
 
-// Map an LCG state to a noise sample in [-1, 1].
-export function lcgToNoise(state: number): number {
-  return (state >>> 0) / 0x100000000 * 2 - 1
+// Noise brightness (band-pass centre) rises with velocity.
+export function velocityToNoiseBrightness(velocity: number, baseBpHz: number, velTrack: number, nyquistGuard: number): number {
+  return velocityToCutoff(velocity, baseBpHz, velTrack, nyquistGuard)
 }
 
-// ─── Render options ─────────────────────────────────────────────────────────
-
-export interface VoiceRenderOpts {
-  sampleRate: number
-  velocity: number // 0..127
-  velTrack: number // 0..1 velocity-to-timbre depth
-  velCurve: VelCurveKind
-  seed: number
+// Pitch-envelope depth deepens with velocity (punchier kick/tom on loud hits).
+export function velocityToPitchDepth(velocity: number, baseDepthSemitones: number, velTrack: number): number {
+  const shift = velocityTimbreShift(velocity, velTrack)
+  return baseDepthSemitones * (1 + shift)
 }
 
-// ─── Per-drum render functions (fill `out` in place) ────────────────────────
+// ─── Per-drum chain parameter resolution (deterministic) ─────────────────────
 
-// KICK: sine body with pitch envelope + click transient, brightness-scaled.
-export function renderKick(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const startHz = 150
-  const endHz = 50
-  const pitchDecaySec = 0.045
-  const bodyDecaySec = 0.28
-  const clickSec = 0.004
-
-  let phase = 0
-  let noiseState = (opts.seed >>> 0) || 1
-  let clickLP = 0
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    const prog = Math.min(1, t / pitchDecaySec)
-    const freq = pitchEnvelopeHz(prog, startHz, endHz)
-    phase += (TWO_PI * freq) / sr
-
-    const body = Math.sin(phase) * expDecay(t / bodyDecaySec)
-
-    noiseState = lcgStep(noiseState)
-    const noise = lcgToNoise(noiseState)
-    // One-pole high-pass: the click is clearly high-frequency, so velocity-to-
-    // timbre (bright) measurably raises the spectral centroid (style 9).
-    clickLP = clickLP + 0.3 * (noise - clickLP)
-    const clickHP = noise - clickLP
-    const clickEnv = t < clickSec ? 1 - t / clickSec : 0
-    const click = clickHP * clickEnv * bright
-
-    out[n] = body * gain * 0.9 + click * gain * 0.5
-  }
+export interface ResolvedDrumParams {
+  gain: number
+  cutoff: number
+  pitchDepth: number
+  noiseBrightness: number
 }
 
-// SNARE: tone osc + bright noise band, noise level scaled by brightness.
-export function renderSnare(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const toneHz = 190
-  const toneDecaySec = 0.11
-  const noiseDecaySec = 0.16
+// Resolve a DrumPatch + velocity into concrete synthesis params. This is the
+// single deterministic entry point a voice chain consumes on trigger.
+export function resolveDrumParams(
+  patch: DrumPatch,
+  velocity: number,
+  curve: VelCurveKind,
+  powerExponent: number,
+  nyquistGuard: number,
+): ResolvedDrumParams {
+  const velTrack = patch.velTrack === undefined ? 0 : clamp01(patch.velTrack)
+  const gain = velCurveGain(velocity, curve, powerExponent)
 
-  let phase = 0
-  let noiseState = (opts.seed >>> 0) || 7
+  const baseCutoff = patch.filter === undefined ? nyquistGuard : patch.filter.cutoff
+  const cutoff = velocityToCutoff(velocity, baseCutoff, velTrack, nyquistGuard)
 
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    phase += (TWO_PI * toneHz) / sr
+  const baseNoise = patch.noise === undefined ? 0 : patch.noise.bpHz
+  const noiseBrightness = baseNoise === 0 ? 0 : velocityToNoiseBrightness(velocity, baseNoise, velTrack, nyquistGuard)
 
-    const tone = Math.sin(phase) * expDecay(t / toneDecaySec) * 0.5
+  // Pitch depth derives from the body pitch span (startHz -> endHz) when present.
+  const baseDepth = patch.body === undefined ? 0 : Math.max(0, patch.body.startHz - patch.body.endHz)
+  const pitchDepth = velocityToPitchDepth(velocity, baseDepth, velTrack)
 
-    noiseState = lcgStep(noiseState)
-    const noise = lcgToNoise(noiseState) * expDecay(t / noiseDecaySec) * 0.5 * bright
-
-    out[n] = (tone + noise) * gain
-  }
-}
-
-// CLAP: multi-tap noise burst over clapSpreadMs with band-pass-ish color.
-export function renderClap(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const spreadSec = 0.03
-  const taps = 4
-  const tailDecaySec = 0.14
-
-  let noiseState = (opts.seed >>> 0) || 13
-  let prev = 0
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    noiseState = lcgStep(noiseState)
-    const raw = lcgToNoise(noiseState)
-
-    // crude band-pass color: subtract a smoothed version (high-pass-ish).
-    const colored = raw - prev * 0.5
-    prev = raw
-
-    // Multi-tap retrigger envelope within the spread window.
-    let tapEnv = 0
-    for (var k = 0; k < taps; k++) {
-      const tapAt = (k / taps) * spreadSec
-      if (t >= tapAt) {
-        const dt = t - tapAt
-        const e = expDecay(dt / 0.012)
-        if (e > tapEnv) tapEnv = e
-      }
-    }
-    const tail = t > spreadSec ? expDecay((t - spreadSec) / tailDecaySec) * 0.6 : 0
-
-    out[n] = colored * (tapEnv + tail) * gain * 0.7 * bright
-  }
-}
-
-// HAT: metallic noise through a high-pass-ish color; closed = short decay,
-// open = long decay.
-export function renderHat(out: Float32Array, opts: VoiceRenderOpts, open: boolean): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const decaySec = open ? 0.4 : 0.05
-
-  let noiseState = (opts.seed >>> 0) || 29
-  let hpPrev = 0
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    noiseState = lcgStep(noiseState)
-    const raw = lcgToNoise(noiseState)
-
-    // high-pass: emphasize transients/highs (metallic), scaled by brightness.
-    const hp = raw - hpPrev
-    hpPrev = raw * 0.7
-
-    out[n] = hp * expDecay(t / decaySec) * gain * 0.5 * bright
-  }
-}
-
-// TOM: sine/triangle with pitch drop (higher + longer than kick).
-export function renderTom(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const startHz = 210
-  const endHz = 110
-  const pitchDecaySec = 0.06
-  const bodyDecaySec = 0.34
-
-  let phase = 0
-  let noiseState = (opts.seed >>> 0) || 41
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    const prog = Math.min(1, t / pitchDecaySec)
-    const freq = pitchEnvelopeHz(prog, startHz, endHz)
-    phase += (TWO_PI * freq) / sr
-
-    const body = Math.sin(phase) * expDecay(t / bodyDecaySec)
-
-    noiseState = lcgStep(noiseState)
-    const stick = lcgToNoise(noiseState) * (t < 0.003 ? 1 : 0) * 0.3 * bright
-
-    out[n] = body * gain * 0.85 + stick * gain
-  }
-}
-
-// PERC: short tone/noise hybrid (conga/bongo/rim-ish).
-export function renderPerc(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const toneHz = 480
-  const decaySec = 0.09
-
-  let phase = 0
-  let noiseState = (opts.seed >>> 0) || 57
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    phase += (TWO_PI * toneHz) / sr
-
-    const tone = Math.sin(phase) * expDecay(t / decaySec) * 0.6
-    noiseState = lcgStep(noiseState)
-    const noise = lcgToNoise(noiseState) * expDecay(t / (decaySec * 0.7)) * 0.4 * bright
-
-    out[n] = (tone + noise) * gain * 0.8
-  }
-}
-
-// RIDE: metallic noise, long decay + strong ping tone.
-export function renderRide(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const pingHz = 820
-  const decaySec = 0.9
-
-  let phase = 0
-  let noiseState = (opts.seed >>> 0) || 71
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    phase += (TWO_PI * pingHz) / sr
-
-    const ping = Math.sin(phase) * expDecay(t / decaySec) * 0.5
-    noiseState = lcgStep(noiseState)
-    const metal = lcgToNoise(noiseState) * expDecay(t / (decaySec * 0.8)) * 0.3 * bright
-
-    out[n] = (ping + metal) * gain * 0.7
-  }
-}
-
-// CRASH: bright metallic noise, long decay, weaker ping than ride.
-export function renderCrash(out: Float32Array, opts: VoiceRenderOpts): void {
-  const sr = opts.sampleRate
-  const gain = velocityToGain(opts.velocity, opts.velCurve)
-  const bright = velocityToBrightness(opts.velocity, opts.velTrack)
-  const decaySec = 1.2
-
-  let noiseState = (opts.seed >>> 0) || 97
-  let hpPrev = 0
-
-  for (var n = 0; n < out.length; n++) {
-    const t = n / sr
-    noiseState = lcgStep(noiseState)
-    const raw = lcgToNoise(noiseState)
-    const hp = raw - hpPrev
-    hpPrev = raw * 0.6
-
-    out[n] = hp * expDecay(t / decaySec) * gain * 0.6 * bright
-  }
-}
-
-// Dispatcher: render the canonical role into `out`. Returns false for roles
-// with no voice (should never happen for canonical roles).
-export function renderDrum(role: DrumRole, out: Float32Array, opts: VoiceRenderOpts): boolean {
-  switch (role) {
-    case 'kick':
-      renderKick(out, opts)
-      return true
-    case 'snare':
-      renderSnare(out, opts)
-      return true
-    case 'clap':
-      renderClap(out, opts)
-      return true
-    case 'hat-closed':
-      renderHat(out, opts, false)
-      return true
-    case 'hat-open':
-      renderHat(out, opts, true)
-      return true
-    case 'tom':
-      renderTom(out, opts)
-      return true
-    case 'perc':
-      renderPerc(out, opts)
-      return true
-    case 'ride':
-      renderRide(out, opts)
-      return true
-    case 'crash':
-      renderCrash(out, opts)
-      return true
-    default:
-      return false
-  }
+  return { gain: gain, cutoff: cutoff, pitchDepth: pitchDepth, noiseBrightness: noiseBrightness }
 }
