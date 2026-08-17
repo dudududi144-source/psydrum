@@ -113,7 +113,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, renderTomSamples, renderPercSamples, renderCymbalSamples, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -293,6 +293,13 @@ body {
     setTimeout(()=>URL.revokeObjectURL(url),2000)
   })
 
+  // wrap a Float32Array into an AudioBuffer (for per-sample DSP renderers)
+  function bufferFromSamples(ctx,data){
+    const buf=ctx.createBuffer(1,data.length,ctx.sampleRate)
+    buf.getChannelData(0).set(data)
+    return buf
+  }
+
   // ── samples toggle ──
   let samplesOn=false,samplesLoaded=false
   const samplesBtn=document.getElementById('samplesBtn')
@@ -311,8 +318,20 @@ body {
           buf=renderHatInto(ctx,{hpHz:7000,decayMs:42,driveDb:1,sampleRate:ctx.sampleRate,durationSec:0.1})
         }else if(channel==='hat-open'){
           buf=renderHatInto(ctx,{hpHz:6400,decayMs:330,driveDb:1,sampleRate:ctx.sampleRate,durationSec:0.4})
+        }else if(channel==='tom'){
+          const d=renderTomSamples({startHz:218,endHz:118,pitchDecayMs:120,driveDb:2,sampleRate:ctx.sampleRate,durationSec:0.25})
+          buf=bufferFromSamples(ctx,d)
+        }else if(channel==='perc'){
+          const d=renderPercSamples({toneHz:640,noiseBpHz:2600,driveDb:1.5,sampleRate:ctx.sampleRate,durationSec:0.12})
+          buf=bufferFromSamples(ctx,d)
+        }else if(channel==='crash'){
+          const d=renderCymbalSamples({hpHz:5000,decayMs:700,pingHz:0,pingMix:0,driveDb:1,sampleRate:ctx.sampleRate,durationSec:0.7})
+          buf=bufferFromSamples(ctx,d)
+        }else if(channel==='ride'){
+          const d=renderCymbalSamples({hpHz:6000,decayMs:520,pingHz:5200,pingMix:0.4,driveDb:1,sampleRate:ctx.sampleRate,durationSec:0.5})
+          buf=bufferFromSamples(ctx,d)
         }else{
-          const dur=(channel==='crash'||channel==='ride')?0.5:0.25
+          const dur=0.25
           buf=await renderDrumSample(channel,ctx.sampleRate,dur)
         }
         device.setSample(channel,buf); device.enableSampleLayer(channel,0.45)
