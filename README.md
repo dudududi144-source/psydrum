@@ -64,6 +64,7 @@ Drums are not "just another sampler voice". They need: choke groups (open hat ch
 | `ARCHITECTURE-STYLE.md` | The psytrance-grade drum spec: canonical roles, per-subgenre kits, FX contract, timing feel, kit schema, style acceptance criteria |
 | `INTEGRATION-GUIDE.md` | How a host (PSY4/PSY6/demo) wires PSYDRUM via a DrumBridge |
 | `PSY-DRUM-IMPLEMENTATION-PLAN.md` | Phased build plan (each phase ends green) |
+| `ROADMAP.md` | **תכנית עבודה מקיפה לרמה מסחרית** — מעקב חי אחר ביצוע |
 
 ## Definition of Done (repo-level, preview)
 
