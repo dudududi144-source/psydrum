@@ -50,21 +50,14 @@ export { DEFAULT_PSY_KIT } from './default-kit'
 
 export { BUILTIN_KIT_MANIFEST } from './kit-builtin'
 
-export { renderDrumSample } from './sample-gen'
 
 export { makeReverbIR } from './fx'
 
 export { GROOVE_TEMPLATES, parsePattern, findGroove } from './grooves'
 export type { GrooveTemplate } from './grooves'
 
-export { renderPsyKickSamples, renderPsyKickInto } from './kick-dsp'
-export type { KickParams } from './kick-dsp'
 
-export { renderSnareSamples, renderHatSamples, renderSnareInto, renderHatInto } from './perc-dsp'
-export type { SnareParams, HatParams } from './perc-dsp'
 
-export { renderTomSamples, renderPercSamples, renderCymbalSamples } from './perc-dsp'
-export type { TomParams, PercParams, CymbalParams } from './perc-dsp'
 
 export { OnePoleLP, OnePoleHP, BiquadFilter, MoogLadder } from './filters'
 export type { BiquadType } from './filters'
