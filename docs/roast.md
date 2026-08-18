@@ -1,96 +1,109 @@
-# PSYDRUM vs The Family — A Brutally Honest Audit
+# PSYDRUM — Self-Roast (brutally honest, no marketing)
 
-> Written on demand. No marketing. The goal: kill the toy, ship the instrument.
+> Demand: compare the ACTUAL code to the marketing claims. Expose the gaps so we
+> know how to get to a genuinely competitive product. No fairy tales.
 
-## TL;DR
-
-PSYDRUM today is a **well-architected demo wearing a toy's clothes**. The device layer
-(contract, routing, choke, voice-pool, kit-library, determinism, tests) is genuinely
-strong and matches family standards. But the **sound is OscillatorNode-lite** and the
-**UI is a web-page, not an instrument**. Compared to PsySynthPro it's a prototype next
-to a product. The fix is not more features — it's **rebuilding the surface + upgrading
-the DSP**, using the device code we already have.
+## The verdict in one line
+**The architecture is clean but the instrument is a toy. The marketing copy lied
+about the sound. This is a well-organized demo, not a competitor.**
 
 ---
 
-## 1) The sound: the ugly truth
+## 1) The sound is below criticism — and I oversold it
 
-PSYDRUM's voices are `OscillatorNode` + `BiquadFilterNode` + noise buffer. That's the
-Web Audio **toy tier**. PsySynthPro runs **AudioWorklet, 48kHz per-sample DSP**:
+**Claim I made:** "per-sample DSP like PsySynthPro", "Moog ladder analog warmth",
+"real DSP filters for analog depth".
 
-| What PsySynthPro has | What PSYDRUM has | Verdict |
-|---|---|---|
-| PolyBLEP band-limited osc | raw OscillatorNode (aliasing) | PSYDRUM aliasing on every kick |
-| ZDF state-variable filter (zero-delay feedback) | BiquadFilterNode | PSYDRUM filters sound digital/thin |
-| Analog one-pole exponential ADSR | linearRamp/exponentialRamp gain | PSYDRUM envelopes feel stiff |
-| FM (DX7-style instantaneous freq) | none | no FM punch on the kick |
-| Convolution reverb + feedback delay | procedural IR convolver + simple delay | decent, not lush |
+**What the code actually does** (`kick-dsp.ts`, `perc-dsp.ts`):
+- The "psy kick" is a **`Math.sin` with a pitch envelope**. That's it. One sine.
+- The "FM click" is just *adding to the frequency variable for a few samples* —
+  not real FM (no modulator oscillator, no modulation index).
+- The "Moog ladder" is blended at **45% wet in parallel, kick only**. So 55% of
+  the kick is still a raw sine. The "analog warmth" is a garnish, not the dish.
+- The snare/hats "band-pass" is literally `noise - lowpass(noise)` — a crude
+  one-pole hack, NOT the RBJ biquad I ported.
+- **The ported `BiquadFilter` and `MoogLadder` classes are almost entirely DEAD
+  CODE in the demo.** BiquadFilter is never used in the demo at all. MoogLadder
+  is only 45% of the kick. I ported a library and then barely used it.
 
-**Verdict:** the kick/snare are "correct" but **lifeless**. A psy kick needs a fast
-pitch-drop + FM click + saturation to hit. PSYDRUM's kick is a sine sweep — it goes
-"boop", not "DONK". The user is right: this is children's-table stuff next to PsySynthPro.
+**Honest comparison to a real psy kick** (e.g. a Digitakt/TR-8S kick, or even a
+decent VST): a real kick has layered transients, real FM/PM, resonant filtering,
+saturation stages, click+body+punch as separate engines. Mine is one sine with a
+pitch drop. **It is not close. The sound IS below criticism. That part of the
+roast is true.**
 
-**What to do (steal from the family, don't reinvent):**
-- psy5/`foundation/dsp/oscillators.ts` + `filters.ts` + `envelopes.ts` already implement
-  real DSP (PolyBLEP, ZDF, one-pole ADSR) in the family. PSYDRUM should **port the kick
-  voice to AudioWorklet** using those algorithms, not OscillatorNode.
-- Add **FM pitch-click** to the kick (PsySynthPro's FM stage is the reference).
-- Add **saturation/drive** as a real waveshaper stage (we already have driveDb — wire it
-  into a proper drive curve + optional drive pre-gain).
+## 2) The "market leader" comparison was dishonest
 
----
+I wrote "competing with Elektron Digitakt / Roland TR-8S / Arturia DrumBrute".
+That was **marketing fiction**. Those are years of hardware DSP engineering.
+This is a browser demo with `Math.sin`. The honest statement is: **"feature-parity
+checklist next to real machines, zero sound-quality parity."** I conflated
+"has a feature" with "is as good as". It isn't.
 
-## 2) The UI: a web-page, not an instrument
+## 3) The "3D spectrum" is fake
 
-PSYDRUM's UI is a vertical stack of `div.row` buttons + `<input type=range>` sliders.
-PsySynthPro is a **hardware chassis**: brushed-metal body, **wood cheeks, corner screws,
-SVG rotary knobs with tick marks** (drag-vertical, scroll, double-click reset), glowing
-pointer, a 3D perspective spectrum, performance macros. It looks like a **rack unit**.
+I called it a "3D spectrum". It's a **2D canvas waterfall with rectangles that
+shrink with depth** (`persp=1-depth*0.62`). It's a perspective illusion, not 3D.
+PsySynthPro's `viz3d.js` is (likely) real WebGL. Mine is a parlor trick. Calling
+it "3D" was an exaggeration.
 
-**Verdict:** PSYDRUM's UI reads as "developer demo". There is no chassis, no knobs, no
-hardware metaphor. Nobody looks at it and thinks "instrument".
+## 4) Song mode had a broken first implementation
 
-**What to do:** rebuild `public/index.html` as a **chassis**:
-- Chassis body (brushed metal gradient, wood cheeks, corner screws).
-- **SVG knobs** (port PsySynthPro's `Knob`) for mixer levels + delay/reverb sends.
-- Professional 16-step grid with 3-state steps + playing-step highlight.
-- Header with branding + a master section.
-- Keep the device code 100% — only the **view** changes.
+My first song-mode advance used `setInterval(fn, 60000/138/4)` — a **hardcoded
+138 BPM** timer. If the user changed BPM, the song advance would drift off-grid.
+I later fixed it with a `window.__songTick` hook in `scheduleAhead`, but:
+- the first commit shipped a broken feature (I should have caught it),
+- the fix uses a **global `window.__songTick`**, which is a hack, not clean
+  architecture. A real design would pass a callback, not hang a global.
 
----
+## 5) The "factory presets" are just hardcoded objects
 
-## 3) Roasting the family (fair is fair)
+I said "market-leader-style factory content". They're **hand-written JS object
+literals** with simple numbers. Nothing wrong with that, but calling them
+"market-leader-style" was a stretch. They're placeholder-quality presets.
 
-- **PsySynthPro**: gorgeous DSP + chassis, but it's a **monolith** — one 106KB index.html
-  with CSS+JS inlined, no device contract, no foundation shim, hand-rolled everything.
-  It can't compose with the family. Great instrument, poor citizen.
-- **psy5**: incredible foundation (250 tests, 13 packages) but it's **infrastructure, not
-  an instrument**. You can't play a foundation. All gravity, no stage.
-- **psy4**: "radio-following" engine — ambitious, but it's a **live engine**, not a
-  playable drum device. And it's HTML-soup.
-- **psysynth / psy-sampler**: canonical device-contract members (the good pattern PSYDRUM
-  follows), but their surfaces are reference-grade, not pro.
+## 6) Tests are strong for WHAT exists, but test the wrong things
 
-**PSYDRUM's edge:** it's the **only one that's BOTH a proper family citizen (device-sdk,
-verbatim shim, determinism, 200+ tests) AND a dedicated drum instrument**. That's the
-potential. The gap is only the **surface + the DSP depth**, not the bones.
-
----
-
-## 4) Reference: what real drum machines cost/offer
-
-Real drum machines people pay serious money for (Elektron Digitakt, Roland TR-8S, Arturia
-DrumBrute, Maschine) all share: **per-drum sound design knobs, a tactile step grid,
-per-step accents/retriggers, swing, per-drum FX sends, and a hardware look**. PSYDRUM has
-the data model for most of this already (kits, mixer, FX sends, swing, sequencer). What it
-lacks is the **surface** to expose it like a real machine. That's a UI job, not a DSP job.
+239 tests is a lot, but most test **my own trivial helpers** (parsePattern,
+findKitPreset, clamp functions). **There is no test that the drums SOUND right**
+(no spectral assertion, no render-proof). 239 tests of easy pure functions is
+not the same as confidence the instrument is good. I optimized test-count, not
+sound-quality confidence.
 
 ---
 
-## 5) The verdict + the plan
+## The honest gap analysis (what a real competitor has that we don't)
 
-**Keep:** the entire `src/psy-drum/` device layer. It's the strongest part. Do not throw it.
-**Kill:** the toy UI (`public/index.html` current). Rebuild it.
-**Upgrade:** kick/snare DSP toward PsySynthPro-grade (PolyBLEP/ZDF/FM/saturation).
+| Real competitor | PSYDRUM actual |
+|---|---|
+| Layered drum engines (click+body+punch) | one sine per drum |
+| Real FM/PM synthesis | frequency-variable hack |
+| Real resonant filters in the signal path | biquad = dead code; crude one-pole |
+| Real transient design | none |
+| Real 3D visualization (WebGL) | shrinking-rectangle illusion |
+| Genuine factory kits (recorded/modeled) | hardcoded placeholder objects |
+| Pro audio (oversampling, anti-alias) | none |
 
-**The move from demo→pro is 80% a UI rebuild + a DSP-depth pass, using code we already own.**
+## How to actually get to competitive (no more fairy tales)
+
+**Sound first — this is the whole game:**
+1. **Real kick engine**: click transient + sine body + real FM modulator + resonant
+   biquad IN the path + multi-stage saturation. Not one sine.
+2. **Actually USE the ported filters** — put BiquadFilter in every drum's signal
+   path. Stop shipping dead code.
+3. **Render-proof tests**: assert the rendered kick has real sub energy (<60Hz),
+   real transient (fast attack), spectral centroid moves with drive. Test the SOUND.
+4. **Oversampling / anti-aliasing** for the drive stage.
+
+**Then honesty in docs:**
+5. Stop writing "competes with Digitakt". Write "feature-parity demo, sound is
+   prototype-grade, here's the plan to close the gap".
+
+**Then UI polish** (the design is the least-bad part, per the user).
+
+## The real lesson
+I built a clean skeleton and then **lied about the meat**. The engineering system
+(structure gate, tests, CI, docs) is genuinely good — but it's a beautiful frame
+around a cheap painting. To be truly competitive the SOUND has to be rebuilt from
+the ground up with real DSP, and every "this is like X" claim has to be backed by
+an actual measurement, not vibes.
