@@ -259,12 +259,20 @@ body {
 
   // ── start audio + device ──
   let analyser=null
+  let drivePreGain=null
   document.getElementById('startBtn').addEventListener('click',async()=>{
     if(device)return
     ctx=new AudioContext(); await ctx.resume()
     const output=ctx.createGain(); output.gain.value=0.85
+    // performance macro: global drive stage (PsySynthPro-style macro)
+    drivePreGain=ctx.createGain(); drivePreGain.gain.value=1
+    const driveShaper=ctx.createWaveShaper()
+    const dc=new Float32Array(1024)
+    for(let i=0;i<1024;i++){const x=(i/1023)*2-1;dc[i]=Math.tanh(x*2)/Math.tanh(2)}
+    driveShaper.curve=dc
+    const driveMakeup=ctx.createGain(); driveMakeup.gain.value=0.85
     analyser=ctx.createAnalyser(); analyser.fftSize=256
-    output.connect(analyser); analyser.connect(ctx.destination)
+    output.connect(drivePreGain); drivePreGain.connect(driveShaper); driveShaper.connect(driveMakeup); driveMakeup.connect(analyser); analyser.connect(ctx.destination)
     device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
     device.onStart()
     document.getElementById('startBtn').classList.add('on')
@@ -275,6 +283,7 @@ body {
   const masterKnobs=document.getElementById('masterKnobs')
   new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v}})
   new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v}})
+  new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{if(drivePreGain)drivePreGain.gain.value=1+v/100*6}})
   new Knob(masterKnobs,{label:'Delay',min:0,max:100,def:0,color:'#ffb74d',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumDelaySend(ch,v/100)}})
   new Knob(masterKnobs,{label:'Reverb',min:0,max:100,def:0,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumReverbSend(ch,v/100)}})
 
