@@ -65,3 +65,6 @@ export type { SnareParams, HatParams } from './perc-dsp'
 
 export { renderTomSamples, renderPercSamples, renderCymbalSamples } from './perc-dsp'
 export type { TomParams, PercParams, CymbalParams } from './perc-dsp'
+
+export { OnePoleLP, OnePoleHP, BiquadFilter, MoogLadder } from './filters'
+export type { BiquadType } from './filters'
