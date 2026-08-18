@@ -375,6 +375,17 @@ body {
   })
 
   // wrap a Float32Array into an AudioBuffer (for per-sample DSP renderers)
+  // Load a real .wav sample (commercial sound from the psy5 bank). Returns the
+  // decoded AudioBuffer, or null on failure (caller falls back to synthesis).
+  async function loadRealSample(url){
+    try{
+      const resp=await fetch(url)
+      if(!resp.ok)return null
+      const ab=await resp.arrayBuffer()
+      return await ctx.decodeAudioData(ab)
+    }catch(e){return null}
+  }
+
   function bufferFromSamples(ctx,data){
     const buf=ctx.createBuffer(1,data.length,ctx.sampleRate)
     buf.getChannelData(0).set(data)
