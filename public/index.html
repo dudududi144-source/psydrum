@@ -259,6 +259,7 @@ body {
     while(seqNextTime<ctx.currentTime+0.12){
       const sw=(seqStep%2===1)?(swing/100)*secondsPerStep()*0.5:0
       scheduleStep(seqStep,seqNextTime+sw)
+      if(window.__songTick)window.__songTick()
       seqNextTime+=secondsPerStep(); seqStep=(seqStep+1)%STEPS
     }
   }
@@ -481,8 +482,8 @@ body {
     startSeq()
     document.getElementById('songPlayBtn').textContent='⏸ stop song'
   })
-  // hook: advance song position every step (called from scheduleAhead via a setInterval)
-  setInterval(()=>{
+  // step-accurate song advance: called once per scheduled step from scheduleAhead
+  window.__songTick=function(){
     if(!songPlaying||!seqPlaying)return
     songStepCount++
     if(songStepCount>=STEPS_PER_GROOVE){
@@ -491,7 +492,7 @@ body {
       if(songPos>=songChain.length){songPos=0} // loop the song
       applyGrooveToPattern(songChain[songPos])
     }
-  },60000/138/4) // approximate step interval at default bpm
+  }
 
   // PWA: register the service worker for offline support
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}) }
