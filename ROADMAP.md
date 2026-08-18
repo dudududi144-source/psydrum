@@ -123,9 +123,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 והקיק מנוגן רק בהסתברות 70%.
 
 #### B2: Motion Data (אוטומציה בזמן אמת)
-- [ ] **B2.1**: עיצוב מודל MotionData (רשימת שינויים עם timestamps)
-- [ ] **B2.2**: יישום Motion REC (הקלטה בזמן אמת)
-- [ ] **B2.3**: יישום Motion Playback (ניגון השינויים)
+- [x] **B2.1**: עיצוב מודל MotionData (רשימת שינויים עם timestamps) ✅ per-step arrays
+- [x] **B2.2**: יישום Motion REC (הקלטה בזמן אמת) ● REC button
+- [x] **B2.3**: יישום Motion Playback (ניגון השינויים) ▶ MOTION button
 - [ ] **B2.4**: Spot-Record (הקלטה של חלק קטן מהתבנית)
 - [ ] **B2.5**: UI להקלטה ועריכה של Motion Data
 
@@ -207,10 +207,10 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
-| B: Sequencer Engine | 14 | 1 | 🟡 בתהליך |
+| B: Sequencer Engine | 14 | 4 | 🟡 בתהליך |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **16** | **~31%** |
+| **סה"כ** | **52** | **19** | **~37%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -222,6 +222,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | A3 Master FX Chain | ✅ | Compressor+Drive+Reverb + UI knobs |
 | 2026-08-18 | A4 velocity dynamics | ✅/⚠️ | velocity→gain עובד; velocity→timbre מוגבל ע"י pre-rendered samples |
 | 2026-08-18 | B1.4 probability triggers | ✅ | per-step probability, right-click cycle |
+| 2026-08-18 | B2 Motion Data | ✅ | per-step Drive/Reverb automation REC/PLAY |
 
 ---
 
