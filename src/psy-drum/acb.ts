@@ -117,9 +117,11 @@ export function renderAcbKick(p: AcbKickParams): Float32Array {
       sig += noise * p.clickAmount * clickEnv
     }
 
-    // Amplitude envelope.
+    // Amplitude envelope. The amplitude decay is deliberately SLOWER than the
+    // pitch decay so the "boom" sustains while the body is in the sub range.
+    // (Tying it to pitch decay made the amplitude die before the body got low.)
     const attack = Math.min(1, t / 0.0015)
-    const bodyEnv = Math.exp(-t / Math.max(0.04, pitchDecay * 1.3))
+    const bodyEnv = Math.exp(-t / Math.max(0.06, pitchDecay * 3.0))
     sig *= attack * bodyEnv
 
     // Drive/saturation.
