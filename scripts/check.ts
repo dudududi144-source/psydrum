@@ -46,6 +46,8 @@ var requiredFiles = [
   'src/psy-drum/presets.ts',
   'tests/psy-drum/presets.test.ts',
   'src/psy-drum/kick-engine.ts',
+  'src/psy-drum/acb.ts',
+  'tests/psy-drum/acb.test.ts',
   'tests/psy-drum/kick-engine.test.ts',
   'src/psy-drum/snare-engine.ts',
   'tests/psy-drum/snare-engine.test.ts',
