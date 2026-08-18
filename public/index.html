@@ -96,6 +96,8 @@ body {
       <button class="tbtn" id="exportKitBtn">export kit</button>
       <input type="file" id="kitFileInput" accept=".json,application/json" style="display:none">
       <button class="tbtn" id="samplesBtn">samples: off</button>
+      <button class="tbtn" id="motionRecBtn">● REC</button>
+      <button class="tbtn" id="motionPlayBtn">▶ MOTION</button>
     </div>
   </div>
 
@@ -286,6 +288,9 @@ body {
         device.onEvent({type:'note',note,velocity:112,duration:0.1,channel,at:hitTime})
       }
     }
+    // Phase B (B2): record/playback motion automation per step
+    if(motionRec){motionDrive[step]=liveDrive;motionReverb[step]=liveReverb}
+    applyMotionStep(step)
     const delayMs=Math.max(0,(when-ctx.currentTime)*1000)
     setTimeout(()=>setPlayhead(step),delayMs)
   }
@@ -347,8 +352,8 @@ body {
   const masterKnobs=document.getElementById('masterKnobs')
   new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v}})
   new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v}})
-  new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{if(drivePreGain)drivePreGain.gain.value=1+v/100*6}})
-  new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{if(masterReverbGain)masterReverbGain.gain.value=v/100}})
+  new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{liveDrive=v;if(drivePreGain)drivePreGain.gain.value=1+v/100*6}})
+  new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{liveReverb=v;if(masterReverbGain)masterReverbGain.gain.value=v/100}})
   new Knob(masterKnobs,{label:'Comp',min:0,max:100,def:50,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(masterComp)masterComp.ratio.value=1+v/100*11}})
   new Knob(masterKnobs,{label:'Delay',min:0,max:100,def:0,color:'#ffb74d',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumDelaySend(ch,v/100)}})
   new Knob(masterKnobs,{label:'Reverb',min:0,max:100,def:0,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumReverbSend(ch,v/100)}})
@@ -411,6 +416,29 @@ body {
     buf.getChannelData(0).set(data)
     return buf
   }
+
+  // ── Phase B (B2): Motion Data — per-step automation of Drive & M.Reverb ──
+  const motionDrive = new Array(STEPS).fill(null)
+  const motionReverb = new Array(STEPS).fill(null)
+  let motionRec=false, motionPlay=false
+  let liveDrive=0, liveReverb=18   // current knob values (0..100)
+  function applyMotionStep(step){
+    if(motionPlay && motionDrive[step]!==null && drivePreGain){
+      drivePreGain.gain.value = 1 + (motionDrive[step]/100)*6
+    }
+    if(motionPlay && motionReverb[step]!==null && masterReverbGain){
+      masterReverbGain.gain.value = motionReverb[step]/100
+    }
+  }
+  document.getElementById('motionRecBtn').addEventListener('click',function(){
+    motionRec=!motionRec
+    this.classList.toggle('on',motionRec)
+    if(motionRec){motionDrive.fill(null);motionReverb.fill(null)}
+  })
+  document.getElementById('motionPlayBtn').addEventListener('click',function(){
+    motionPlay=!motionPlay
+    this.classList.toggle('on',motionPlay)
+  })
 
   // ── samples toggle ──
   let samplesOn=false,samplesLoaded=false
