@@ -23,6 +23,7 @@ export interface KickEngineParams {
   bodyStartHz: number
   bodyEndHz: number
   bodyPitchDecayMs: number
+  bodyDecayMs: number    // amplitude decay (separate from pitch decay so sub sustains)
   // punch
   punchRatio: number     // punch freq = bodyHz * punchRatio
   punchAmount: number    // 0..1
@@ -54,6 +55,7 @@ export function renderKickEngine(p: KickEngineParams): Float32Array {
   const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
   const punchDecay = Math.max(0.001, p.punchDecayMs / 1000)
   const bodyPitchDecay = Math.max(0.001, p.bodyPitchDecayMs / 1000)
+  const bodyDecay = Math.max(0.05, p.bodyDecayMs / 1000)
 
   for (let i = 0; i < n; i++) {
     const t = i / sr
@@ -88,9 +90,9 @@ export function renderKickEngine(p: KickEngineParams): Float32Array {
     // resonant low-pass IN the path (real biquad)
     sig = bodyLp.process(sig)
 
-    // envelope: fast attack, exponential decay
+    // envelope: fast attack, exponential decay (separate body decay so sub sustains)
     const attack = Math.min(1, t / 0.0015)
-    const bodyEnv = Math.exp(-t / Math.max(0.04, bodyPitchDecay * 1.3))
+    const bodyEnv = Math.exp(-t / Math.max(0.05, bodyDecay))
     sig *= attack * bodyEnv
 
     // multi-stage saturation
