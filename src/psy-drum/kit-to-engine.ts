@@ -76,7 +76,7 @@ export function hatParamsFromPatch(p: DrumPatch, d: EngineDefaults, open: boolea
     metalHz: 5500,
     ringRatio: 1.34,
     metalAmount: 0.6,
-    noiseAmount: num(noise && noise.mix, 0.3),
+    noiseAmount: num(noise && noise.mix, 0.5),
     noiseHpHz: num(noise && noise.bpHz, 7000),
     hpHz: 7500,
     hpQ: 0.7,
