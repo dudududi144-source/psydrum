@@ -96,10 +96,10 @@ peak של הסנייר ב-180-220Hz.
 ו-master mix שולט על היחס בין dry/wet.
 
 #### A4: חיבור velTrack לדינמיקה בזמן אמת
-- [ ] **A4.1**: הוספת שדה velocity ל-NoteEvent (אם חסר)
-- [ ] **A4.2**: חישוב פרמטרי סינתזה בזמן אמת לפי velocity
-- [ ] **A4.3**: עד cutoff, noise brightness, pitch depth דינמיים
-- [ ] **A4.4**: בדיקות שמוודאות שהסאונד משתנה עם velocity
+- [x] **A4.1**: הוספת שדה velocity ל-NoteEvent (אם חסר) ✅ כבר קיים ב-NoteEvent
+- [x] **A4.2**: חישוב פרמטרי סינתזה בזמן אמת לפי velocity ✅ velocity→gain דרך resolveDrumParams; velocity→timbre מוגבל ע"י סמפלים pre-rendered (מתועד)
+- [~] **A4.3**: עד cutoff, noise brightness, pitch depth דינמיים ⚠️ מוגבל: סמפלים pre-rendered לא ניתנים לשינוי timbre בזמן אמת; דורש מעבר לסינתזה real-time (מתועד כ-follow-up)
+- [x] **A4.4**: בדיקות שמוודאות שהסאונד משתנה עם velocity ✅ velocity→gain מאומת בבדיקות הקיימות
 
 **קריטריון קבלה**: קיק עם velocity 127 נשמע בהיר ועמוק יותר מקיק עם
 velocity 64, וההבדל מדיד ספקטרלית.
@@ -206,11 +206,11 @@ velocity 64, וההבדל מדיד ספקטרלית.
 ### סטטוס נוכחי
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
-| A: Sound Engine | 18 | 12 | 🟡 בתהליך |
+| A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
 | B: Sequencer Engine | 14 | 0 | 🔴 לא התחיל |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **12** | **~23%** |
+| **סה"כ** | **52** | **15** | **~29%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -220,6 +220,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | A1.3 ACB kit integration | ✅ | acbKickParamsFromPatch + demo synthFallback |
 | 2026-08-18 | A2 ACB snare+hat | ✅ | renderAcbSnare/Hat + mappers + demo |
 | 2026-08-18 | A3 Master FX Chain | ✅ | Compressor+Drive+Reverb + UI knobs |
+| 2026-08-18 | A4 velocity dynamics | ✅/⚠️ | velocity→gain עובד; velocity→timbre מוגבל ע"י pre-rendered samples |
 
 ---
 
