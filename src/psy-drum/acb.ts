@@ -243,3 +243,49 @@ export function renderAcbHat(p: AcbHatParams): Float32Array {
   }
   return out
 }
+
+
+// Map a kit DrumPatch -> AcbSnareParams (ROADMAP A2.3).
+export function acbSnareParamsFromPatch(
+  patch: { body?: { startHz?: number; endHz?: number }; noise?: { mix?: number; bpHz?: number }; amp?: { decayMs?: number }; driveDb?: number },
+  d: { sampleRate: number; durationSec: number },
+): AcbSnareParams {
+  const body = patch.body || {}
+  const noise = patch.noise || {}
+  const amp = patch.amp || {}
+  const startHz = typeof body.startHz === 'number' ? body.startHz : 195
+  const endHz = typeof body.endHz === 'number' ? body.endHz : startHz
+  return {
+    sampleRate: d.sampleRate,
+    durationSec: d.durationSec,
+    toneHz: startHz,
+    tonePitchDropHz: Math.max(0, startHz - endHz),
+    toneAmount: 0.5,
+    noiseBpHz: typeof noise.bpHz === 'number' ? noise.bpHz : 1850,
+    noiseResonance: typeof noise.mix === 'number' ? Math.max(0, Math.min(1, noise.mix)) : 0.6,
+    noiseAmount: 0.7,
+    noiseDecayMs: typeof amp.decayMs === 'number' ? amp.decayMs : 130,
+    toneDecayMs: typeof amp.decayMs === 'number' ? amp.decayMs : 90,
+    driveDb: typeof patch.driveDb === 'number' ? patch.driveDb : 2,
+  }
+}
+
+// Map a kit DrumPatch -> AcbHatParams (ROADMAP A2.3).
+export function acbHatParamsFromPatch(
+  patch: { noise?: { mix?: number; bpHz?: number }; amp?: { decayMs?: number }; driveDb?: number },
+  d: { sampleRate: number; durationSec: number },
+  open: boolean,
+): AcbHatParams {
+  const noise = patch.noise || {}
+  const amp = patch.amp || {}
+  return {
+    sampleRate: d.sampleRate,
+    durationSec: d.durationSec,
+    metalHz: 5500,
+    ringRatio: 1.34,
+    hpHz: typeof noise.bpHz === 'number' ? noise.bpHz : (open ? 6400 : 7500),
+    hpResonance: typeof noise.mix === 'number' ? Math.max(0, Math.min(1, noise.mix)) : 0.6,
+    decayMs: typeof amp.decayMs === 'number' ? amp.decayMs : (open ? 330 : 45),
+    driveDb: typeof patch.driveDb === 'number' ? patch.driveDb : 1,
+  }
+}
