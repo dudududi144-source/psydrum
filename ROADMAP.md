@@ -115,7 +115,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 - [ ] **B1.1**: עיצוב שפת תנאים (DSL) פשוטה
 - [ ] **B1.2**: הוספת שדה conditions ל-NoteEvent
 - [ ] **B1.3**: יישום מנוע הערכת תנאים ב-note-router
-- [ ] **B1.4**: תנאים בסיסיים: previousNote, velocity range, probability
+- [x] **B1.4**: תנאים בסיסיים: previousNote, velocity range, probability ✅ probability triggers (right-click cycle)
 - [ ] **B1.5**: תנאים מתקדמים: bar position, fill state, energy level
 - [ ] **B1.6**: UI לעריכת תנאים (visual condition builder)
 
@@ -207,10 +207,10 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
-| B: Sequencer Engine | 14 | 0 | 🔴 לא התחיל |
+| B: Sequencer Engine | 14 | 1 | 🟡 בתהליך |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **15** | **~29%** |
+| **סה"כ** | **52** | **16** | **~31%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -221,6 +221,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | A2 ACB snare+hat | ✅ | renderAcbSnare/Hat + mappers + demo |
 | 2026-08-18 | A3 Master FX Chain | ✅ | Compressor+Drive+Reverb + UI knobs |
 | 2026-08-18 | A4 velocity dynamics | ✅/⚠️ | velocity→gain עובד; velocity→timbre מוגבל ע"י pre-rendered samples |
+| 2026-08-18 | B1.4 probability triggers | ✅ | per-step probability, right-click cycle |
 
 ---
 
