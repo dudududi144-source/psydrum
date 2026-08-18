@@ -79,5 +79,5 @@ export type { CymbalEngineParams } from './cymbal-engine'
 
 export { kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './kit-to-engine'
 
-export { SVF, renderAcbKick, acbKickParamsFromPatch } from './acb'
-export type { AcbKickParams } from './acb'
+export { SVF, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat } from './acb'
+export type { AcbKickParams, AcbSnareParams, AcbHatParams } from './acb'
