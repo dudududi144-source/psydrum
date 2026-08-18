@@ -141,6 +141,29 @@ body {
   ]
   const STEPS = 16
   const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
+
+  // Real drum samples (commercial-quality, from psy5) mapped per channel.
+  const REAL_SAMPLES = {
+    'kick': './samples/real/909_BD_02.wav',
+    'snare': './samples/real/md_snare_Snares_0000.wav',
+    'clap': './samples/real/md_clap_Claps_0000.wav',
+    'hat-closed': './samples/real/md_hat_Hats_0008.wav',
+    'hat-open': './samples/real/md_hat_Hats_0013.wav',
+    'perc': './samples/real/md_perc_Percs_0000.wav',
+  }
+  const realBuffers = {}   // channel -> AudioBuffer (loaded lazily)
+  async function loadRealSample(channel){
+    if(realBuffers[channel]) return realBuffers[channel]
+    const url = REAL_SAMPLES[channel]
+    if(!url) return null
+    try{
+      const resp = await fetch(url)
+      const arr = await resp.arrayBuffer()
+      const buf = await ctx.decodeAudioData(arr)
+      realBuffers[channel] = buf
+      return buf
+    }catch(e){ return null }
+  }
   // per-step retrigger/roll count (1-4), shift+click to cycle (market-leader ratcheting)
   const retrigger = DRUMS.map(() => new Array(STEPS).fill(1))
 
