@@ -167,7 +167,7 @@ body {
   // per-step retrigger/roll count (1-4), shift+click to cycle (market-leader ratcheting)
   const retrigger = DRUMS.map(() => new Array(STEPS).fill(1))
 
-  let ctx=null, device=null
+  let ctx=null, device=null, masterReverbGain=null, masterComp=null
   let bpm=138, swing=0
   let seqPlaying=false, seqStep=0, seqNextTime=0, seqTimer=null
   let playheadCells=[]
@@ -309,7 +309,7 @@ body {
     analyser=ctx.createAnalyser(); analyser.fftSize=256
     // Master FX Chain (ROADMAP A3): Compressor -> Drive -> Reverb send
     const comp=ctx.createDynamicsCompressor()
-    comp.threshold.value=-18; comp.knee.value=12; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.15
+    comp.threshold.value=-18; comp.knee.value=12; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.15; masterComp=comp
     // Procedural reverb IR (noise with exponential decay)
     const irLen=Math.floor(ctx.sampleRate*1.8)
     const ir=ctx.createBuffer(1,irLen,ctx.sampleRate)
@@ -318,7 +318,7 @@ body {
     for(let i=0;i<irLen;i++){irs^=irs<<13;irs^=irs>>>17;irs^=irs<<5
       ird[i]=(((irs>>>0)/4294967296)*2-1)*Math.pow(1-i/irLen,2.5)}
     const reverb=ctx.createConvolver(); reverb.buffer=ir
-    const reverbGain=ctx.createGain(); reverbGain.gain.value=0.18
+    const reverbGain=ctx.createGain(); reverbGain.gain.value=0.18; masterReverbGain=reverbGain
     const masterMix=ctx.createGain(); masterMix.gain.value=1
     // wire: output -> comp -> drive -> masterMix -> analyser -> destination
     output.connect(comp); comp.connect(drivePreGain)
@@ -337,6 +337,8 @@ body {
   new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v}})
   new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v}})
   new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{if(drivePreGain)drivePreGain.gain.value=1+v/100*6}})
+  new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{if(masterReverbGain)masterReverbGain.gain.value=v/100}})
+  new Knob(masterKnobs,{label:'Comp',min:0,max:100,def:50,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(masterComp)masterComp.ratio.value=1+v/100*11}})
   new Knob(masterKnobs,{label:'Delay',min:0,max:100,def:0,color:'#ffb74d',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumDelaySend(ch,v/100)}})
   new Knob(masterKnobs,{label:'Reverb',min:0,max:100,def:0,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumReverbSend(ch,v/100)}})
 
