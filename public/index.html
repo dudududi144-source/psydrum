@@ -118,6 +118,17 @@ body {
     <div class="stitle">3D Spectrum</div>
     <canvas id="viz3d" width="1080" height="260" style="width:100%;border-radius:10px;background:linear-gradient(180deg,#0a0c10,#05060a);border:1px solid #000;box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);"></canvas>
   </div>
+
+  <div class="section">
+    <div class="stitle">Song Mode · Chain grooves into a song</div>
+    <div class="row" style="gap:8px;">
+      <select class="tsel" id="songAddSelect"></select>
+      <button class="tbtn" id="songAddBtn">+ add</button>
+      <button class="tbtn" id="songClearBtn">clear</button>
+      <button class="tbtn" id="songPlayBtn">⏵ play song</button>
+    </div>
+    <div id="songChain" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;"></div>
+  </div>
 </div>
 
 <script type="module">
