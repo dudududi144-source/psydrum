@@ -363,7 +363,7 @@ body {
       for(const[label,note,channel]of DRUMS){
         let buf
         if(channel==='kick'){
-          const kd=renderKickEngine({sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2,bodyStartHz:160,bodyEndHz:48,bodyPitchDecayMs:45,punchRatio:3,punchAmount:0.5,punchDecayMs:12,clickAmount:0.4,clickHpHz:4000,clickMs:2,filterCutoffHz:300,filterQ:1.2,driveDb:4})
+          const kd=renderKickEngine({sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2,bodyStartHz:160,bodyEndHz:48,bodyPitchDecayMs:45,bodyDecayMs:120,punchRatio:3,punchAmount:0.5,punchDecayMs:12,clickAmount:0.4,clickHpHz:4000,clickMs:2,filterCutoffHz:300,filterQ:1.2,driveDb:4})
           buf=bufferFromSamples(ctx,kd)
         }else if(channel==='snare'){
           buf=renderSnareInto(ctx,{toneHz:190,noiseBpHz:1800,driveDb:2,sampleRate:ctx.sampleRate,durationSec:0.18})
