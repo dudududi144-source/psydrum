@@ -71,3 +71,6 @@ export type { BiquadType } from './filters'
 
 export { KIT_PRESETS, GROOVE_PRESETS, findKitPreset, findGroovePreset } from './presets'
 export type { KitPreset, GroovePreset } from './presets'
+
+export { renderKickEngine } from './kick-engine'
+export type { KickEngineParams } from './kick-engine'
