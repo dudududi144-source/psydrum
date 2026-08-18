@@ -121,7 +121,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, renderTomSamples, renderPercSamples, renderCymbalSamples, loadKitManifest, GROOVE_TEMPLATES, parsePattern } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, renderTomSamples, renderPercSamples, renderCymbalSamples, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -272,9 +272,9 @@ body {
 
   // ── groove selector ──
   const grooveSelect=document.getElementById('grooveSelect')
-  GROOVE_TEMPLATES.forEach((g,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=g.label;grooveSelect.appendChild(o)})
+  GROOVE_PRESETS.forEach((g,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=g.label;grooveSelect.appendChild(o)})
   grooveSelect.addEventListener('change',()=>{
-    const g=GROOVE_TEMPLATES[Number(grooveSelect.value)]; if(!g)return
+    const g=GROOVE_PRESETS[Number(grooveSelect.value)]; if(!g)return
     for(let r=0;r<DRUMS.length;r++)pattern[r].fill(false)
     for(const[label,note,channel]of DRUMS){const pat=g.patterns[channel];if(!pat)continue
       const ridx=DRUMS.findIndex(d=>d[2]===channel);const steps=parsePattern(pat)
@@ -284,8 +284,8 @@ body {
 
   // ── kit selector ──
   const kitSelect=document.getElementById('kitSelect')
-  BUILTIN_KIT_MANIFEST.kits.forEach((k,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=k.id;kitSelect.appendChild(o)})
-  kitSelect.addEventListener('change',()=>{const k=BUILTIN_KIT_MANIFEST.kits[Number(kitSelect.value)];if(device&&k)device.loadKit(k)})
+  KIT_PRESETS.forEach((k,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=k.label;kitSelect.appendChild(o)})
+  kitSelect.addEventListener('change',()=>{const k=KIT_PRESETS[Number(kitSelect.value)];if(device&&k)device.loadKit({drums:k.drums,choke:device.config?undefined:undefined,id:k.id,style:k.style,humanize:true,provenance:{license:'procedural',author:'psydrum',created:'2026'}})})
 
   // ── kit load/export ──
   const loadKitBtn=document.getElementById('loadKitBtn'),kitFileInput=document.getElementById('kitFileInput')
