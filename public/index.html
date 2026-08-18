@@ -285,7 +285,12 @@ body {
   // ── kit selector ──
   const kitSelect=document.getElementById('kitSelect')
   KIT_PRESETS.forEach((k,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=k.label;kitSelect.appendChild(o)})
-  kitSelect.addEventListener('change',()=>{const k=KIT_PRESETS[Number(kitSelect.value)];if(device&&k)device.loadKit({drums:k.drums,choke:device.config?undefined:undefined,id:k.id,style:k.style,humanize:true,provenance:{license:'procedural',author:'psydrum',created:'2026'}})})
+  kitSelect.addEventListener('change',()=>{
+    const k=KIT_PRESETS[Number(kitSelect.value)]
+    if(device&&k){
+      device.loadKit({id:k.id,style:k.style,humanize:true,provenance:{license:'procedural',author:'psydrum',created:'2026'},choke:{hat:'exclusive',crashMaxPoly:2,rideMaxPoly:2},drums:k.drums})
+    }
+  })
 
   // ── kit load/export ──
   const loadKitBtn=document.getElementById('loadKitBtn'),kitFileInput=document.getElementById('kitFileInput')
