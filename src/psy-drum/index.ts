@@ -68,3 +68,6 @@ export type { TomParams, PercParams, CymbalParams } from './perc-dsp'
 
 export { OnePoleLP, OnePoleHP, BiquadFilter, MoogLadder } from './filters'
 export type { BiquadType } from './filters'
+
+export { KIT_PRESETS, GROOVE_PRESETS, findKitPreset, findGroovePreset } from './presets'
+export type { KitPreset, GroovePreset } from './presets'
