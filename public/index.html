@@ -395,13 +395,39 @@ body {
   // ── samples toggle ──
   let samplesOn=false,samplesLoaded=false
   const samplesBtn=document.getElementById('samplesBtn')
+  // map drum channel -> real sample file in public/samples/
+  const REAL_SAMPLES={
+    'kick':'samples/real/md_kick_Kicks_0000.wav',
+    'snare':'samples/real/md_snare_Snares_0000.wav',
+    'clap':'samples/real/md_clap_Claps_0000.wav',
+    'hat-closed':'samples/real/md_hat_Hats_0008.wav',
+    'hat-open':'samples/real/md_hat_Hats_0013.wav',
+    'tom':'samples/tom.wav',
+    'perc':'samples/real/md_perc_Percs_0000.wav',
+    'ride':'samples/ride.wav',
+    'crash':'samples/real/md_hat_Hats_0013.wav'
+  }
+  async function fetchSample(path){
+    try{
+      const resp=await fetch(path)
+      if(!resp.ok)return null
+      const ab=await resp.arrayBuffer()
+      return await ctx.decodeAudioData(ab)
+    }catch(e){return null}
+  }
   samplesBtn.addEventListener('click',async()=>{
     if(!device||!ctx)return
     samplesOn=!samplesOn
     if(samplesOn&&!samplesLoaded){
       samplesBtn.textContent='samples: loading…'
       for(const[label,note,channel]of DRUMS){
-        let buf
+        let buf=null
+        // prefer the REAL sample; fall back to the synthesized engine
+        const spath=REAL_SAMPLES[channel]
+        if(spath){buf=await fetchSample(spath)}
+        if(!buf){
+          // fallback to synth engine
+          let synthBuf
         // try the commercial-quality real sample first
         const realBuf = await loadRealSample(channel)
         if(realBuf){ buf=realBuf }
