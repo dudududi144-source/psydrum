@@ -391,7 +391,10 @@ body {
       samplesBtn.textContent='samples: loading…'
       for(const[label,note,channel]of DRUMS){
         let buf
-        if(channel==='kick'){
+        // try the commercial-quality real sample first
+        const realBuf = await loadRealSample(channel)
+        if(realBuf){ buf=realBuf }
+        else if(channel==='kick'){
           const kp=currentKitPatches['kick']||{}
           const kd=renderKickEngine(kickParamsFromPatch(kp,{sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2}))
           buf=bufferFromSamples(ctx,kd)
