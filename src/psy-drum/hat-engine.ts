@@ -56,12 +56,14 @@ export function renderHatEngine(p: HatEngineParams): Float32Array {
   for (let i = 0; i < n; i++) {
     const t = i / sr
 
-    // metallic: ring-mod of two square oscillators (inharmonic metallic tones)
+    // metallic: ring-mod of two square oscillators (inharmonic metallic tones).
+    // Softened by blending with the high-passed noise so the raw square harmonics
+    // don't dominate (raw squares alone sound chiptune/8-bit).
     ph1 += p.metalHz / sr
     if (ph1 >= 1) ph1 -= Math.floor(ph1)
     ph2 += metalHz2 / sr
     if (ph2 >= 1) ph2 -= Math.floor(ph2)
-    const metal = square(ph1) * square(ph2) * p.metalAmount
+    const metal = (square(ph1) * square(ph2)) * p.metalAmount * 0.6
 
     // noise texture
     noiseState ^= noiseState << 13
