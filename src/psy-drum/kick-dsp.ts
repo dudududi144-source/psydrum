@@ -48,7 +48,10 @@ export function renderPsyKickSamples(p: KickParams): Float32Array {
 
     phase += freq / sr
     if (phase >= 1) phase -= Math.floor(phase)
-    let s = ladder.process(Math.sin(2 * Math.PI * phase))
+    const dry = Math.sin(2 * Math.PI * phase)
+    const wet = ladder.process(dry)
+    // parallel blend: keep the transient punch (dry) + add analog warmth (wet)
+    let s = dry * 0.55 + wet * 0.45
 
     // sharp attack envelope (fast rise, exponential decay)
     const attack = Math.min(1, t / 0.002)
