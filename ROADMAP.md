@@ -86,11 +86,11 @@ Elektron Digitakt II, Roland TR-8S ו-Arturia DrumBrute Impact, תוך שהיא
 peak של הסנייר ב-180-220Hz.
 
 #### A3: Master FX Chain
-- [ ] **A3.1**: עיצוב ארכיטקטורת Master FX (Compressor → Drive → Reverb)
-- [ ] **A3.2**: יישום Compressor מובנה (dynamic range compression)
-- [ ] **A3.3**: יישום Drive/Distortion מובנה (waveshaper מתקדם)
-- [ ] **A3.4**: יישום Reverb מובנה (convolution עם IR פרוצדורלי)
-- [ ] **A3.5**: UI לשליטה על כל אפקט בנפרד + master mix
+- [x] **A3.1**: עיצוב ארכיטקטורת Master FX (Compressor → Drive → Reverb) ✅
+- [x] **A3.2**: יישום Compressor מובנה (dynamic range compression) ✅ DynamicsCompressorNode
+- [x] **A3.3**: יישום Drive/Distortion מובנה (waveshaper מתקדם) ✅ tanh waveshaper
+- [x] **A3.4**: יישום Reverb מובנה (convolution עם IR פרוצדורלי) ✅ ConvolverNode + procedural IR
+- [x] **A3.5**: UI לשליטה על כל אפקט בנפרד + master mix ✅ Drive/M.Reverb/Comp knobs
 
 **קריטריון קבלה**: כל אפקט ניתן לשליטה בזמן אמת, עם bypass לכל אחד,
 ו-master mix שולט על היחס בין dry/wet.
@@ -206,11 +206,11 @@ velocity 64, וההבדל מדיד ספקטרלית.
 ### סטטוס נוכחי
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
-| A: Sound Engine | 18 | 7 | 🟡 בתהליך |
+| A: Sound Engine | 18 | 12 | 🟡 בתהליך |
 | B: Sequencer Engine | 14 | 0 | 🔴 לא התחיל |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **7** | **~13%** |
+| **סה"כ** | **52** | **12** | **~23%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -219,6 +219,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | A1.2 SVF + ACB kick | ✅ | acb.ts + acb.test.ts, 254 בדיקות ירוקות |
 | 2026-08-18 | A1.3 ACB kit integration | ✅ | acbKickParamsFromPatch + demo synthFallback |
 | 2026-08-18 | A2 ACB snare+hat | ✅ | renderAcbSnare/Hat + mappers + demo |
+| 2026-08-18 | A3 Master FX Chain | ✅ | Compressor+Drive+Reverb + UI knobs |
 
 ---
 
