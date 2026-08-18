@@ -49,6 +49,8 @@ var requiredFiles = [
   'src/psy-drum/perc-dsp.ts',
   'tests/psy-drum/perc-dsp.test.ts',
   'tests/psy-drum/perc-dsp-rest.test.ts',
+  'src/psy-drum/filters.ts',
+  'tests/psy-drum/filters.test.ts',
   'tests/psy-drum/default-kit.test.ts',
   'tests/psy-drum/kit-builtin.test.ts',
   'tests/psy-drum/voice-synth.test.ts',
