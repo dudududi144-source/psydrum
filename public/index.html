@@ -536,7 +536,7 @@ body {
     if(!device||!ctx||songChain.length===0)return
     if(songPlaying){songPlaying=false;stopSeq();document.getElementById('songPlayBtn').textContent='⏵ play song';return}
     songPlaying=true;songPos=0;songStepCount=0
-    applyGrooveToPattern(songChain[0])
+    applyGrooveToPattern(songChain[0].groove)
     startSeq()
     document.getElementById('songPlayBtn').textContent='⏸ stop song'
   })
@@ -544,11 +544,14 @@ body {
   window.__songTick=function(){
     if(!songPlaying||!seqPlaying)return
     songStepCount++
-    if(songStepCount>=STEPS_PER_GROOVE){
+    // Phase B (B3.1): each song entry has its own bar count
+    const cur=songChain[songPos]
+    const stepsForEntry=(cur?cur.bars:2)*STEPS
+    if(songStepCount>=stepsForEntry){
       songStepCount=0
       songPos++
       if(songPos>=songChain.length){songPos=0} // loop the song
-      applyGrooveToPattern(songChain[songPos])
+      applyGrooveToPattern(songChain[songPos].groove)
     }
   }
 
