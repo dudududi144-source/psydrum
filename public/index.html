@@ -99,6 +99,7 @@ body {
       <button class="tbtn" id="motionRecBtn">● REC</button>
       <button class="tbtn" id="motionPlayBtn">▶ MOTION</button>
       <button class="tbtn" id="autoFillBtn">FILL: 4</button>
+      <button class="tbtn" id="varBtn">VAR: A</button>
     </div>
   </div>
 
@@ -427,6 +428,42 @@ body {
     buf.getChannelData(0).set(data)
     return buf
   }
+
+  // ── Phase B (B3.3): Pattern Variations — A/B/C transformations of the pattern ──
+  let variation='A'
+  let basePattern=null
+  const varBtn=document.getElementById('varBtn')
+  function clonePattern(p){return p.map(row=>row.slice())}
+  function applyVariation(){
+    if(!basePattern)return
+    for(let r=0;r<DRUMS.length;r++){
+      const ch=DRUMS[r][2]
+      for(let s=0;s<STEPS;s++){
+        let v=basePattern[r][s]
+        if(variation==='B'){
+          // add offbeat hats
+          if(ch==='hat-closed' && s%4===2) v=true
+        }else if(variation==='C'){
+          // add extra kick on step 10, remove kick on step 7
+          if(ch==='kick' && s===10) v=true
+          if(ch==='kick' && s===7) v=false
+          // add offbeat hats
+          if(ch==='hat-closed' && s%4===2) v=true
+        }
+        pattern[r][s]=v
+      }
+    }
+    refreshGrid()
+  }
+  varBtn.addEventListener('click',()=>{
+    // capture current pattern as the base when leaving A
+    if(variation==='A') basePattern=clonePattern(pattern)
+    variation = variation==='A'?'B':variation==='B'?'C':'A'
+    if(variation==='A' && basePattern){ pattern=clonePattern(basePattern); basePattern=null; refreshGrid() }
+    else applyVariation()
+    varBtn.textContent='VAR: '+variation
+    varBtn.classList.toggle('on',variation!=='A')
+  })
 
   // ── Phase B (B3.2): Auto-Fill — every N bars, layer a fill on the last bar ──
   let autoFillEvery=4   // 0 = off; else fill every N bars
