@@ -16,6 +16,7 @@ function baseParams(over: Partial<KickEngineParams> = {}): KickEngineParams {
     bodyStartHz: 160,
     bodyEndHz: 48,
     bodyPitchDecayMs: 45,
+    bodyDecayMs: 120,
     punchRatio: 3,
     punchAmount: 0.5,
     punchDecayMs: 12,
@@ -46,7 +47,8 @@ function goertzelEnergy(samples: Float32Array, sampleRate: number, freqHz: numbe
 describe('kick engine render-proof (tests the SOUND)', () => {
   it('has real sub energy below 60Hz (the boom)', () => {
     const s = renderKickEngine(baseParams())
-    const sub = goertzelEnergy(s, SR, 50)
+    // body is a pitch sweep, so measure a sub band (40+50+60Hz), not one tone
+    const sub = goertzelEnergy(s, SR, 40) + goertzelEnergy(s, SR, 50) + goertzelEnergy(s, SR, 60)
     expect(sub).toBeGreaterThan(0.05)
   })
 
