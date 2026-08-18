@@ -10,6 +10,8 @@
 // Rendered into an AudioBuffer so it can be used via the sample layer. This runs
 // in the HOST (browser), not bun tests.
 
+import { MoogLadder } from './filters'
+
 export interface KickParams {
   startHz: number
   endHz: number
@@ -30,6 +32,8 @@ export function renderPsyKickSamples(p: KickParams): Float32Array {
   const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
 
   let phase = 0
+  // analog depth: run the body through a Moog ladder low-pass (psy5 DSP)
+  const ladder = new MoogLadder(sr, Math.max(60, p.endHz * 4), 0.25)
   for (let i = 0; i < n; i++) {
     const t = i / sr
     // exponential pitch drop from startHz toward endHz
@@ -44,7 +48,7 @@ export function renderPsyKickSamples(p: KickParams): Float32Array {
 
     phase += freq / sr
     if (phase >= 1) phase -= Math.floor(phase)
-    let s = Math.sin(2 * Math.PI * phase)
+    let s = ladder.process(Math.sin(2 * Math.PI * phase))
 
     // sharp attack envelope (fast rise, exponential decay)
     const attack = Math.min(1, t / 0.002)
