@@ -220,11 +220,15 @@ body {
     norm(){return (this.value-this.min)/(this.max-this.min)}
     bind(){
       const self=this; let dragging=false,startY=0,startV=0
-      this.zone.addEventListener('pointerdown',e=>{dragging=true;startY=e.clientY;startV=self.value;self.zone.setPointerCapture(e.pointerId)})
-      this.zone.addEventListener('pointermove',e=>{if(!dragging)return
+      this.zone.addEventListener('pointerdown',e=>{dragging=true;startY=e.clientY;startV=self.value;try{self.zone.setPointerCapture(e.pointerId)}catch(err){}})
+      const move=e=>{if(!dragging)return
         const dy=startY-e.clientY; const span=self.max-self.min
-        self.set(startV+dy/150*span,true)})
-      this.zone.addEventListener('pointerup',()=>{dragging=false})
+        self.set(startV+dy/150*span,false)}
+      const up=()=>{dragging=false}
+      this.zone.addEventListener('pointermove',move)
+      this.zone.addEventListener('pointerup',up)
+      window.addEventListener('pointermove',move)
+      window.addEventListener('pointerup',up)
       this.zone.addEventListener('wheel',e=>{e.preventDefault();const span=self.max-self.min
         self.set(self.value+(e.deltaY<0?1:-1)*span/50,true)},{passive:false})
       this.zone.addEventListener('dblclick',()=>{self.set(self.cfg.def!==undefined?self.cfg.def:self.min,true)})
