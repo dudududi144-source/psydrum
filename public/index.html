@@ -395,27 +395,7 @@ body {
   // ── samples toggle ──
   let samplesOn=false,samplesLoaded=false
   const samplesBtn=document.getElementById('samplesBtn')
-  // map drum channel -> real sample file in public/samples/
-  const REAL_SAMPLES={
-    'kick':'samples/real/md_kick_Kicks_0000.wav',
-    'snare':'samples/real/md_snare_Snares_0000.wav',
-    'clap':'samples/real/md_clap_Claps_0000.wav',
-    'hat-closed':'samples/real/md_hat_Hats_0008.wav',
-    'hat-open':'samples/real/md_hat_Hats_0013.wav',
-    'tom':'samples/tom.wav',
-    'perc':'samples/real/md_perc_Percs_0000.wav',
-    'ride':'samples/ride.wav',
-    'crash':'samples/real/md_hat_Hats_0013.wav'
-  }
-  async function fetchSample(path){
-    try{
-      const resp=await fetch(path)
-      if(!resp.ok)return null
-      const ab=await resp.arrayBuffer()
-      return await ctx.decodeAudioData(ab)
-    }catch(e){return null}
-  }
-  // ── REAL SAMPLES (from psy5) ──
+  // Clean single map: real commercial samples where available, synth fallback otherwise.
   const REAL_SAMPLE_MAP={
     kick:'samples/real/nord_kick_deep_68.wav',
     snare:'samples/real/nord_snare_Snare1.wav',
@@ -427,29 +407,48 @@ body {
     crash:'samples/real/md_hat_Hats_0013.wav',
     ride:'samples/real/md_hat_Hats_0008.wav'
   }
-  let realSamplesOn=false
-  async function loadRealSamples(){
+  async function tryLoadSample(url){
+    try{
+      const resp=await fetch(url)
+      if(!resp.ok)return null
+      const ab=await resp.arrayBuffer()
+      return await ctx.decodeAudioData(ab)
+    }catch(e){return null}
+  }
+  // Synth fallback: render the real engine so there is ALWAYS sound.
+  function synthFallback(channel){
+    const D={sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2}
+    const kit=currentKitPatches||{}
+    if(channel==='kick')return renderKickEngine(kickParamsFromPatch(kit.kick||{},D))
+    if(channel==='snare')return renderSnareEngine(snareParamsFromPatch(kit.snare||{},D))
+    if(channel==='hat-closed')return renderHatEngine(hatParamsFromPatch(kit['hat-closed']||{},D,false))
+    if(channel==='hat-open')return renderHatEngine(hatParamsFromPatch(kit['hat-open']||{},D,true))
+    if(channel==='crash')return renderCymbalEngine(cymbalParamsFromPatch(kit.crash||{},D,false))
+    if(channel==='ride')return renderCymbalEngine(cymbalParamsFromPatch(kit.ride||{},D,true))
+    return null
+  }
+  async function loadAllSamples(){
+    let realCount=0
     for(const[label,note,channel]of DRUMS){
+      let buf=null
       const url=REAL_SAMPLE_MAP[channel]
-      if(!url)continue
-      try{
-        const resp=await fetch(url)
-        const arr=await resp.arrayBuffer()
-        const buf=await ctx.decodeAudioData(arr)
-        device.setSample(channel,buf)
-        device.enableSampleLayer(channel,1.0)
-      }catch(e){}
+      if(url){buf=await tryLoadSample(url)}
+      if(buf){device.setSample(channel,buf);device.enableSampleLayer(channel,1.0);realCount++}
+      else{
+        const fb=synthFallback(channel)
+        if(fb){device.setSample(channel,bufferFromSamples(ctx,fb));device.enableSampleLayer(channel,1.0)}
+      }
     }
+    return realCount
   }
   samplesBtn.addEventListener('click',async()=>{
     if(!device||!ctx)return
     samplesOn=!samplesOn
     if(samplesOn&&!samplesLoaded){
       samplesBtn.textContent='samples: loading…'
-      // Load REAL samples (from psy5) for commercial-quality sound
-      await loadRealSamples()
+      const n=await loadAllSamples()
       samplesLoaded=true
-      samplesBtn.textContent='samples: on (real)'
+      samplesBtn.textContent='samples: on ('+n+' real)'
       return
     }
     samplesBtn.textContent=samplesOn?'samples: on':'samples: off'
