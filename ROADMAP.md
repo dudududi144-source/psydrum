@@ -69,7 +69,7 @@ Elektron Digitakt II, Roland TR-8S ו-Arturia DrumBrute Impact, תוך שהיא
 #### A1: מנוע ACB מובנה לקיק
 - [ ] **A1.1**: מחקר מעגלי סינון של TR-808 kick (low-pass resonant circuit)
 - [x] **A1.2**: יישום מודל חישובי של מעגל הסינון (state-variable filter) ✅ `src/psy-drum/acb.ts`
-- [ ] **A1.3**: שילוב המודל ב-kick-engine.ts (החלפת ה-Moog ladder הפשוט)
+- [x] **A1.3**: שילוב מנוע ה-ACB בסאונד הקיק ✅ דרך acbKickParamsFromPatch + synthFallback
 - [x] **A1.4**: בדיקות render-proof לאימות הסאב והחום האנלוגי ✅ sub-bass מאומת; השוואת חום ל-90 ב-A1.5
 - [ ] **A1.5**: השוואה A/B מול סמפלי 909 אמיתיים (spectral comparison)
 
@@ -206,17 +206,18 @@ velocity 64, וההבדל מדיד ספקטרלית.
 ### סטטוס נוכחי
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
-| A: Sound Engine | 18 | 2 | 🟡 בתהליך |
+| A: Sound Engine | 18 | 3 | 🟡 בתהליך |
 | B: Sequencer Engine | 14 | 0 | 🔴 לא התחיל |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **2** | **~4%** |
+| **סה"כ** | **52** | **3** | **~6%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
 |--------|--------|--------|--------|
 | 2026-08-18 | יצירת ROADMAP | ✅ | מסמך זה |
 | 2026-08-18 | A1.2 SVF + ACB kick | ✅ | acb.ts + acb.test.ts, 254 בדיקות ירוקות |
+| 2026-08-18 | A1.3 ACB kit integration | ✅ | acbKickParamsFromPatch + demo synthFallback |
 
 ---
 
