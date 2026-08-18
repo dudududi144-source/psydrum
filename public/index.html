@@ -132,7 +132,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderAcbKick, acbKickParamsFromPatch, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -409,9 +409,9 @@ body {
     const D={sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2}
     const kit=currentKitPatches||{}
     if(channel==='kick')return renderAcbKick(acbKickParamsFromPatch(kit.kick||{},D))
-    if(channel==='snare')return renderSnareEngine(snareParamsFromPatch(kit.snare||{},D))
-    if(channel==='hat-closed')return renderHatEngine(hatParamsFromPatch(kit['hat-closed']||{},D,false))
-    if(channel==='hat-open')return renderHatEngine(hatParamsFromPatch(kit['hat-open']||{},D,true))
+    if(channel==='snare')return renderAcbSnare(acbSnareParamsFromPatch(kit.snare||{},D))
+    if(channel==='hat-closed')return renderAcbHat(acbHatParamsFromPatch(kit['hat-closed']||{},D,false))
+    if(channel==='hat-open')return renderAcbHat(acbHatParamsFromPatch(kit['hat-open']||{},D,true))
     if(channel==='crash')return renderCymbalEngine(cymbalParamsFromPatch(kit.crash||{},D,false))
     if(channel==='ride')return renderCymbalEngine(cymbalParamsFromPatch(kit.ride||{},D,true))
     return null
