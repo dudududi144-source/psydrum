@@ -141,6 +141,8 @@ body {
   ]
   const STEPS = 16
   const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
+  // Phase B (B1.4): per-step trigger probability (1.0 = always). right-click a step to cycle 100%->75%->50%->25%.
+  const stepProb = DRUMS.map(() => new Array(STEPS).fill(1.0))
 
   // Real drum samples (commercial-quality, from psy5) mapped per channel.
   const REAL_SAMPLES = {
@@ -250,6 +252,13 @@ body {
             cell.classList.toggle('on',pattern[r][s])
           }
         })
+        cell.addEventListener('contextmenu',(e)=>{
+          e.preventDefault()
+          // Phase B (B1.4): cycle trigger probability 100 -> 75 -> 50 -> 25 -> 100
+          const cur=stepProb[r][s]
+          stepProb[r][s] = cur>=1.0 ? 0.75 : cur>=0.75 ? 0.5 : cur>=0.5 ? 0.25 : 1.0
+          cell.style.opacity = pattern[r][s] ? String(0.35+0.65*stepProb[r][s]) : ''
+        })
         row.appendChild(cell); playheadCells[r].push(cell)
       }
       seqEl.appendChild(row)
@@ -267,6 +276,8 @@ body {
   function secondsPerStep(){return 60/bpm/4}
   function scheduleStep(step,when){
     for(let r=0;r<DRUMS.length;r++) if(pattern[r][step]){
+      // Phase B (B1.4): probability gate
+      if(Math.random() > stepProb[r][step]) continue
       const[,note,channel]=DRUMS[r]
       const rt=retrigger[r][step]
       const stepDur=secondsPerStep()
