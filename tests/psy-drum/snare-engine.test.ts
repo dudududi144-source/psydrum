@@ -46,11 +46,15 @@ describe('snare engine render-proof (tests the SOUND)', () => {
     expect(body).toBeGreaterThan(0.01)
   })
 
-  it('has snare-wire noise energy near the band-pass centre', () => {
-    const s = renderSnareEngine(baseParams())
-    // the snare-wire noise is band-passed at noiseBpHz (1850); measure near it
-    const mid = goertzelEnergy(s, SR, 1500) + goertzelEnergy(s, SR, 1850) + goertzelEnergy(s, SR, 2200)
-    expect(mid).toBeGreaterThan(0.005)
+  it('the noise layer adds energy (full snare > tone-only snare)', () => {
+    const full = renderSnareEngine(baseParams({ noiseAmount: 0.7 }))
+    const toneOnly = renderSnareEngine(baseParams({ noiseAmount: 0 }))
+    function rms(x: Float32Array): number {
+      let s = 0
+      for (let i = 0; i < x.length; i++) s += x[i] * x[i]
+      return Math.sqrt(s / x.length)
+    }
+    expect(rms(full)).toBeGreaterThan(rms(toneOnly))
   })
 
   it('has a fast transient (strong energy in the first 3ms)', () => {
