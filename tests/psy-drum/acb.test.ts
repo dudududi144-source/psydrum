@@ -4,7 +4,7 @@
 // sub-bass energy and resonant character.
 
 import { describe, it, expect } from 'bun:test'
-import { SVF, renderAcbKick } from '../../src/psy-drum/acb'
+import { SVF, renderAcbKick, acbKickParamsFromPatch } from '../../src/psy-drum/acb'
 import type { AcbKickParams } from '../../src/psy-drum/acb'
 
 const SR = 44100
@@ -118,5 +118,37 @@ describe('ACB kick model', () => {
     for (let i = 0; i < head; i++) e += Math.abs(s[i])
     e /= head
     expect(e).toBeGreaterThan(0.05)
+  })
+})
+
+
+describe('acbKickParamsFromPatch (A1.3 kit->ACB mapping)', () => {
+  it('maps kit patch body/drive to ACB params', () => {
+    const p = acbKickParamsFromPatch(
+      { body: { startHz: 200, endHz: 60, pitchDecayMs: 50 }, driveDb: 6 },
+      { sampleRate: 44100, durationSec: 0.3 },
+    )
+    expect(p.bodyStartHz).toBe(200)
+    expect(p.bodyEndHz).toBe(60)
+    expect(p.pitchDecayMs).toBe(50)
+    expect(p.driveDb).toBe(6)
+    expect(p.sampleRate).toBe(44100)
+  })
+
+  it('provides defaults for empty patch', () => {
+    const p = acbKickParamsFromPatch({}, { sampleRate: 44100, durationSec: 0.3 })
+    expect(p.bodyStartHz).toBe(160)
+    expect(p.bodyEndHz).toBe(48)
+    expect(p.filterResonance).toBeGreaterThan(0)
+    expect(p.driveDb).toBeGreaterThan(0)
+  })
+
+  it('different patches produce different ACB kicks', () => {
+    const a = renderAcbKick(acbKickParamsFromPatch({ body: { startHz: 150, endHz: 40 } }, { sampleRate: 44100, durationSec: 0.2 }))
+    const b = renderAcbKick(acbKickParamsFromPatch({ body: { startHz: 250, endHz: 80 } }, { sampleRate: 44100, durationSec: 0.2 }))
+    // They should differ (different pitch content)
+    let diff = 0
+    for (let i = 0; i < Math.min(a.length, b.length); i++) diff += Math.abs(a[i] - b[i])
+    expect(diff).toBeGreaterThan(0.01)
   })
 })
