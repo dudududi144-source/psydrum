@@ -307,7 +307,25 @@ body {
     driveShaper.curve=dc
     const driveMakeup=ctx.createGain(); driveMakeup.gain.value=0.85
     analyser=ctx.createAnalyser(); analyser.fftSize=256
-    output.connect(drivePreGain); drivePreGain.connect(driveShaper); driveShaper.connect(driveMakeup); driveMakeup.connect(analyser); analyser.connect(ctx.destination)
+    // Master FX Chain (ROADMAP A3): Compressor -> Drive -> Reverb send
+    const comp=ctx.createDynamicsCompressor()
+    comp.threshold.value=-18; comp.knee.value=12; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.15
+    // Procedural reverb IR (noise with exponential decay)
+    const irLen=Math.floor(ctx.sampleRate*1.8)
+    const ir=ctx.createBuffer(1,irLen,ctx.sampleRate)
+    const ird=ir.getChannelData(0)
+    let irs=0x243f6a88>>>0
+    for(let i=0;i<irLen;i++){irs^=irs<<13;irs^=irs>>>17;irs^=irs<<5
+      ird[i]=(((irs>>>0)/4294967296)*2-1)*Math.pow(1-i/irLen,2.5)}
+    const reverb=ctx.createConvolver(); reverb.buffer=ir
+    const reverbGain=ctx.createGain(); reverbGain.gain.value=0.18
+    const masterMix=ctx.createGain(); masterMix.gain.value=1
+    // wire: output -> comp -> drive -> masterMix -> analyser -> destination
+    output.connect(comp); comp.connect(drivePreGain)
+    drivePreGain.connect(driveShaper); driveShaper.connect(driveMakeup); driveMakeup.connect(masterMix)
+    // reverb send (parallel): driveMakeup -> reverb -> reverbGain -> masterMix
+    driveMakeup.connect(reverb); reverb.connect(reverbGain); reverbGain.connect(masterMix)
+    masterMix.connect(analyser); analyser.connect(ctx.destination)
     device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
     device.onStart()
     document.getElementById('startBtn').classList.add('on')
