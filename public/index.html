@@ -98,6 +98,7 @@ body {
       <button class="tbtn" id="samplesBtn">samples: off</button>
       <button class="tbtn" id="motionRecBtn">● REC</button>
       <button class="tbtn" id="motionPlayBtn">▶ MOTION</button>
+      <button class="tbtn" id="autoFillBtn">FILL: 4</button>
     </div>
   </div>
 
@@ -277,6 +278,11 @@ body {
   // ── lookahead sequencer ──
   function secondsPerStep(){return 60/bpm/4}
   function scheduleStep(step,when){
+    // Phase B (B3.2): during a fill bar, add escalating snare hits at the end
+    if(fillActive && step>=12){
+      const snareNote=38
+      device.onEvent({type:'note',note:snareNote,velocity:112+ (step-12)*5,duration:0.1,channel:'snare',at:when})
+    }
     for(let r=0;r<DRUMS.length;r++) if(pattern[r][step]){
       // Phase B (B1.4): probability gate
       if(Math.random() > stepProb[r][step]) continue
@@ -287,6 +293,11 @@ body {
         const hitTime=when+(i*stepDur/rt)
         device.onEvent({type:'note',note,velocity:112,duration:0.1,channel,at:hitTime})
       }
+    }
+    // Phase B (B3.2): track bars; mark the bar just before a fill boundary
+    if(step===0){
+      barCount++
+      fillActive = (autoFillEvery>0) && (barCount % autoFillEvery === autoFillEvery-1)
     }
     // Phase B (B2): record/playback motion automation per step
     if(motionRec){motionDrive[step]=liveDrive;motionReverb[step]=liveReverb}
@@ -416,6 +427,18 @@ body {
     buf.getChannelData(0).set(data)
     return buf
   }
+
+  // ── Phase B (B3.2): Auto-Fill — every N bars, layer a fill on the last bar ──
+  let autoFillEvery=4   // 0 = off; else fill every N bars
+  let barCount=0
+  let fillActive=false
+  const autoFillBtn=document.getElementById('autoFillBtn')
+  autoFillBtn.addEventListener('click',()=>{
+    autoFillEvery = autoFillEvery>=8 ? 0 : autoFillEvery===0 ? 2 : autoFillEvery*2
+    autoFillBtn.textContent = autoFillEvery===0 ? 'FILL: off' : 'FILL: '+autoFillEvery
+    autoFillBtn.classList.toggle('on',autoFillEvery>0)
+    barCount=0
+  })
 
   // ── Phase B (B2): Motion Data — per-step automation of Drive & M.Reverb ──
   const motionDrive = new Array(STEPS).fill(null)
