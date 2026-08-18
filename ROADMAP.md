@@ -136,7 +136,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 - [x] **B3.1**: עיצוב מודל SongPlan (רשימת grooves עם durations) ✅ {groove,bars} entries
 - [x] **B3.2**: יישום Auto-Fill (fill אוטומטי כל N תיבות) ✅ escalating snare fill
 - [x] **B3.3**: יישום Pattern Variations (וריאציות על אותה תבנית) ✅ VAR A/B/C
-- [ ] **B3.4**: UI לעריכת מבנה השיר (drag & drop grooves)
+- [x] **B3.4**: UI לעריכת מבנה השיר (drag & drop grooves) ✅ Song Editor structure overview
 
 **קריטריון קבלה**: ניתן לבנות שיר של 8 חלקים עם variations ו-fills
 אוטומטיים, ולנגן אותו ברצף.
@@ -207,10 +207,10 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
-| B: Sequencer Engine | 14 | 7 | 🟡 בתהליך |
+| B: Sequencer Engine | 14 | 8 | 🟡 בתהליך |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **22** | **~42%** |
+| **סה"כ** | **52** | **23** | **~44%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -226,6 +226,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | B3.1 SongPlan durations | ✅ | per-entry bars, right-click chip to cycle |
 | 2026-08-18 | B3.2 Auto-Fill | ✅ | escalating snare fill every N bars |
 | 2026-08-18 | B3.3 Pattern Variations | ✅ | VAR A/B/C transformations |
+| 2026-08-18 | B3.4 Song Editor | ✅ | visual structure overview |
 
 ---
 
