@@ -77,3 +77,6 @@ export type { KickEngineParams } from './kick-engine'
 
 export { renderSnareEngine } from './snare-engine'
 export type { SnareEngineParams } from './snare-engine'
+
+export { renderHatEngine } from './hat-engine'
+export type { HatEngineParams } from './hat-engine'
