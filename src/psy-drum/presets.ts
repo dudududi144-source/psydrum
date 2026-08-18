@@ -134,6 +134,27 @@ export const GROOVE_PRESETS: GroovePreset[] = [
       perc: '....x.......x...',
     },
   },
+  {
+    id: 'groove-techno',
+    label: 'Techno Drive',
+    style: 'techno',
+    patterns: {
+      kick: 'x...x...x...x...',
+      'hat-closed': '..x...x...x...x.',
+      clap: '....x.......x...',
+      perc: 'x.x.x.x.x.x.x.x.',
+    },
+  },
+  {
+    id: 'groove-breaks',
+    label: 'Breaks',
+    style: 'breaks',
+    patterns: {
+      kick: 'x.....x...x.....',
+      snare: '....x.......x...',
+      'hat-closed': 'x.x.x.x.x.x.x.x.',
+    },
+  },
 ]
 
 export function findKitPreset(id: string): KitPreset | null {
