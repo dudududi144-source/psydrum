@@ -77,10 +77,10 @@ Elektron Digitakt II, Roland TR-8S ו-Arturia DrumBrute Impact, תוך שהיא
 תואמים ל-909 kick, ו-hash ספקטרלי דומה (>85% similarity).
 
 #### A2: מנוע ACB לסנייר והאט
-- [ ] **A2.1**: יישום מודל סינון band-pass לסנייר (resonant noise)
-- [ ] **A2.2**: יישום מודל metallic resonance להאט (ring-mod משופר)
-- [ ] **A2.3**: שילוב ב-snare-engine.ts ו-hat-engine.ts
-- [ ] **A2.4**: בדיקות render-proof לבהירות מטאלית וחום סנייר
+- [x] **A2.1**: יישום מודל סינון band-pass לסנייר (resonant noise) ✅ renderAcbSnare
+- [x] **A2.2**: יישום מודל metallic resonance להאט (ring-mod משופר) ✅ renderAcbHat
+- [x] **A2.3**: שילוב מנועי ACB בסאונד הסנייר/האט ✅ דרך acbSnare/HatParamsFromPatch + demo
+- [x] **A2.4**: בדיקות render-proof לבהירות מטאלית וחום סנייר ✅ acb.test.ts
 
 **קריטריון קבלתה**: spectral centroid של ההאט בטווח 6-10kHz, ו-resonance
 peak של הסנייר ב-180-220Hz.
@@ -206,11 +206,11 @@ velocity 64, וההבדל מדיד ספקטרלית.
 ### סטטוס נוכחי
 | Phase | משימות | הושלמו | סטטוס |
 |-------|---------|---------|--------|
-| A: Sound Engine | 18 | 3 | 🟡 בתהליך |
+| A: Sound Engine | 18 | 7 | 🟡 בתהליך |
 | B: Sequencer Engine | 14 | 0 | 🔴 לא התחיל |
 | C: UX | 11 | 0 | 🔴 לא התחיל |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **3** | **~6%** |
+| **סה"כ** | **52** | **7** | **~13%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -218,6 +218,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | יצירת ROADMAP | ✅ | מסמך זה |
 | 2026-08-18 | A1.2 SVF + ACB kick | ✅ | acb.ts + acb.test.ts, 254 בדיקות ירוקות |
 | 2026-08-18 | A1.3 ACB kit integration | ✅ | acbKickParamsFromPatch + demo synthFallback |
+| 2026-08-18 | A2 ACB snare+hat | ✅ | renderAcbSnare/Hat + mappers + demo |
 
 ---
 
