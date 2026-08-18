@@ -83,3 +83,5 @@ export type { HatEngineParams } from './hat-engine'
 
 export { renderCymbalEngine } from './cymbal-engine'
 export type { CymbalEngineParams } from './cymbal-engine'
+
+export { kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './kit-to-engine'
