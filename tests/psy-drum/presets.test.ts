@@ -36,7 +36,7 @@ describe('kit presets', () => {
 
 describe('groove presets', () => {
   it('provides at least four grooves with unique ids', () => {
-    expect(GROOVE_PRESETS.length).toBeGreaterThanOrEqual(4)
+    expect(GROOVE_PRESETS.length).toBeGreaterThanOrEqual(6)
     const ids = GROOVE_PRESETS.map(g => g.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
