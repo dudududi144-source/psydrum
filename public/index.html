@@ -504,6 +504,9 @@ body {
     }
   }
 
+  // ── initial render ──
+  buildSeq()
+
   // PWA: register the service worker for offline support
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}) }
 </script>
