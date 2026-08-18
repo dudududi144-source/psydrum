@@ -446,6 +446,20 @@ body {
     samplesOn=!samplesOn
     if(samplesOn&&!samplesLoaded){
       samplesBtn.textContent='samples: loading…'
+      // Load REAL samples (from psy5) for commercial-quality sound
+      await loadRealSamples()
+      samplesLoaded=true
+      samplesBtn.textContent='samples: on (real)'
+      return
+    }
+    samplesBtn.textContent=samplesOn?'samples: on':'samples: off'
+  })
+  // (original synth-sample handler kept below for reference)
+  function _unusedSynthSamples(){
+    if(!device||!ctx)return
+    samplesOn=!samplesOn
+    if(samplesOn&&!samplesLoaded){
+      samplesBtn.textContent='samples: loading…'
       for(const[label,note,channel]of DRUMS){
         let buf=null
         // prefer the REAL sample; fall back to the synthesized engine
