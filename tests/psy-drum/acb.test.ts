@@ -4,7 +4,7 @@
 // sub-bass energy and resonant character.
 
 import { describe, it, expect } from 'bun:test'
-import { SVF, renderAcbKick, acbKickParamsFromPatch } from '../../src/psy-drum/acb'
+import { SVF, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat } from '../../src/psy-drum/acb'
 import type { AcbKickParams } from '../../src/psy-drum/acb'
 
 const SR = 44100
@@ -150,5 +150,73 @@ describe('acbKickParamsFromPatch (A1.3 kit->ACB mapping)', () => {
     let diff = 0
     for (let i = 0; i < Math.min(a.length, b.length); i++) diff += Math.abs(a[i] - b[i])
     expect(diff).toBeGreaterThan(0.01)
+  })
+})
+
+
+describe('ACB snare model (A2.1)', () => {
+  function snareParams(over = {}) {
+    return {
+      sampleRate: 44100, durationSec: 0.2,
+      toneHz: 195, tonePitchDropHz: 40, toneAmount: 0.5,
+      noiseBpHz: 1850, noiseResonance: 0.6, noiseAmount: 0.7,
+      noiseDecayMs: 130, toneDecayMs: 90, driveDb: 2,
+      ...over,
+    }
+  }
+  it('is bounded and deterministic', () => {
+    const a = renderAcbSnare(snareParams())
+    const b = renderAcbSnare(snareParams())
+    for (let i = 0; i < a.length; i++) {
+      expect(a[i]).toBeGreaterThanOrEqual(-1.01)
+      expect(a[i]).toBeLessThanOrEqual(1.01)
+    }
+    expect(Array.from(a.slice(0, 300))).toEqual(Array.from(b.slice(0, 300)))
+  })
+  it('has resonant noise energy in the snare band', () => {
+    const s = renderAcbSnare(snareParams())
+    const e = goertzelEnergy(s, 44100, 1850)
+    expect(e).toBeGreaterThan(0.005)
+  })
+  it('has a fast transient', () => {
+    const s = renderAcbSnare(snareParams())
+    const head = Math.floor(44100 * 0.003)
+    let e = 0
+    for (let i = 0; i < head; i++) e += Math.abs(s[i])
+    expect(e / head).toBeGreaterThan(0.05)
+  })
+})
+
+describe('ACB hat model (A2.2)', () => {
+  function hatParams(over = {}) {
+    return {
+      sampleRate: 44100, durationSec: 0.15,
+      metalHz: 5500, ringRatio: 1.34,
+      hpHz: 7500, hpResonance: 0.6, decayMs: 45, driveDb: 1,
+      ...over,
+    }
+  }
+  it('is bounded and deterministic', () => {
+    const a = renderAcbHat(hatParams())
+    const b = renderAcbHat(hatParams())
+    for (let i = 0; i < a.length; i++) {
+      expect(a[i]).toBeGreaterThanOrEqual(-1.01)
+      expect(a[i]).toBeLessThanOrEqual(1.01)
+    }
+    expect(Array.from(a.slice(0, 300))).toEqual(Array.from(b.slice(0, 300)))
+  })
+  it('has metallic brightness (high-frequency energy)', () => {
+    const s = renderAcbHat(hatParams())
+    const e = goertzelEnergy(s, 44100, 8000)
+    expect(e).toBeGreaterThan(0.003)
+  })
+  it('closed hat (short decay) is quieter in the tail than open hat (long decay)', () => {
+    const closed = renderAcbHat(hatParams({ decayMs: 45, durationSec: 0.4 }))
+    const open = renderAcbHat(hatParams({ decayMs: 330, durationSec: 0.4 }))
+    let eClosed = 0, eOpen = 0
+    const from = Math.floor(44100 * 0.2)
+    for (let i = from; i < closed.length; i++) eClosed += Math.abs(closed[i])
+    for (let i = from; i < open.length; i++) eOpen += Math.abs(open[i])
+    expect(eOpen).toBeGreaterThan(eClosed)
   })
 })
