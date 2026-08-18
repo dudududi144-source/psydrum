@@ -130,6 +130,8 @@ body {
   ]
   const STEPS = 16
   const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
+  // per-step retrigger/roll count (1-4), shift+click to cycle (market-leader ratcheting)
+  const retrigger = DRUMS.map(() => new Array(STEPS).fill(1))
 
   let ctx=null, device=null
   let bpm=138, swing=0
@@ -205,7 +207,15 @@ body {
       playheadCells.push([])
       for(let s=0;s<STEPS;s++){
         const cell=document.createElement('div'); cell.className='step'+(pattern[r][s]?' on':'')
-        cell.addEventListener('pointerdown',()=>{pattern[r][s]=!pattern[r][s];cell.classList.toggle('on',pattern[r][s])})
+        cell.addEventListener('pointerdown',(e)=>{
+          if(e.shiftKey){
+            retrigger[r][s]=(retrigger[r][s]%4)+1
+            cell.textContent=retrigger[r][s]>1?String(retrigger[r][s]):''
+          }else{
+            pattern[r][s]=!pattern[r][s]
+            cell.classList.toggle('on',pattern[r][s])
+          }
+        })
         row.appendChild(cell); playheadCells[r].push(cell)
       }
       seqEl.appendChild(row)
@@ -224,7 +234,12 @@ body {
   function scheduleStep(step,when){
     for(let r=0;r<DRUMS.length;r++) if(pattern[r][step]){
       const[,note,channel]=DRUMS[r]
-      device.onEvent({type:'note',note,velocity:112,duration:0.1,channel,at:when})
+      const rt=retrigger[r][step]
+      const stepDur=secondsPerStep()
+      for(let i=0;i<rt;i++){
+        const hitTime=when+(i*stepDur/rt)
+        device.onEvent({type:'note',note,velocity:112,duration:0.1,channel,at:hitTime})
+      }
     }
     const delayMs=Math.max(0,(when-ctx.currentTime)*1000)
     setTimeout(()=>setPlayhead(step),delayMs)
