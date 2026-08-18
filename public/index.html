@@ -442,6 +442,57 @@ body {
   }
   drawViz3d()
 
+  // ── song mode: chain grooves into a song ──
+  const songChain=[]
+  const songAddSelect=document.getElementById('songAddSelect')
+  GROOVE_PRESETS.forEach((g,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=g.label;songAddSelect.appendChild(o)})
+  const songChainEl=document.getElementById('songChain')
+  function renderSongChain(){
+    songChainEl.innerHTML=''
+    songChain.forEach((gi,idx)=>{
+      const chip=document.createElement('div')
+      chip.style.cssText='background:rgba(179,136,255,0.15);border:1px solid rgba(179,136,255,0.4);border-radius:6px;padding:4px 10px;font-size:11px;color:#e8e2ff;cursor:pointer;'
+      chip.textContent=(idx+1)+'. '+GROOVE_PRESETS[gi].label
+      chip.addEventListener('click',()=>{songChain.splice(idx,1);renderSongChain()})
+      songChainEl.appendChild(chip)
+    })
+  }
+  document.getElementById('songAddBtn').addEventListener('click',()=>{
+    songChain.push(Number(songAddSelect.value));renderSongChain()
+  })
+  document.getElementById('songClearBtn').addEventListener('click',()=>{
+    songChain.length=0;renderSongChain()
+  })
+  function applyGrooveToPattern(gi){
+    const g=GROOVE_PRESETS[gi];if(!g)return
+    for(let r=0;r<DRUMS.length;r++)pattern[r].fill(false)
+    for(const[label,note,channel]of DRUMS){const pat=g.patterns[channel];if(!pat)continue
+      const ridx=DRUMS.findIndex(d=>d[2]===channel);const steps=parsePattern(pat)
+      for(let s=0;s<steps.length;s++)pattern[ridx][s]=steps[s]}
+    refreshGrid()
+  }
+  let songPos=0,songStepCount=0,songPlaying=false
+  const STEPS_PER_GROOVE=32 // 2 bars per groove
+  document.getElementById('songPlayBtn').addEventListener('click',()=>{
+    if(!device||!ctx||songChain.length===0)return
+    if(songPlaying){songPlaying=false;stopSeq();document.getElementById('songPlayBtn').textContent='⏵ play song';return}
+    songPlaying=true;songPos=0;songStepCount=0
+    applyGrooveToPattern(songChain[0])
+    startSeq()
+    document.getElementById('songPlayBtn').textContent='⏸ stop song'
+  })
+  // hook: advance song position every step (called from scheduleAhead via a setInterval)
+  setInterval(()=>{
+    if(!songPlaying||!seqPlaying)return
+    songStepCount++
+    if(songStepCount>=STEPS_PER_GROOVE){
+      songStepCount=0
+      songPos++
+      if(songPos>=songChain.length){songPos=0} // loop the song
+      applyGrooveToPattern(songChain[songPos])
+    }
+  },60000/138/4) // approximate step interval at default bpm
+
   // PWA: register the service worker for offline support
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}) }
 </script>
