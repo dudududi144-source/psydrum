@@ -80,3 +80,6 @@ export type { SnareEngineParams } from './snare-engine'
 
 export { renderHatEngine } from './hat-engine'
 export type { HatEngineParams } from './hat-engine'
+
+export { renderCymbalEngine } from './cymbal-engine'
+export type { CymbalEngineParams } from './cymbal-engine'
