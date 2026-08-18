@@ -399,17 +399,11 @@ body {
           const kd=renderKickEngine(kickParamsFromPatch(kp,{sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2}))
           buf=bufferFromSamples(ctx,kd)
         }else if(channel==='snare'){
-          const sp=currentKitPatches['snare']||{}
-          const sd=renderSnareEngine(snareParamsFromPatch(sp,{sampleRate:ctx.sampleRate,durationSec:0.18,oversample:2}))
-          buf=bufferFromSamples(ctx,sd)
+          buf=await loadRealSample('samples/snare.wav')||bufferFromSamples(ctx,renderSnareEngine(snareParamsFromPatch(currentKitPatches['snare']||{},{sampleRate:ctx.sampleRate,durationSec:0.18,oversample:2})))
         }else if(channel==='hat-closed'){
-          const hp2=currentKitPatches['hat-closed']||{}
-          const hc=renderHatEngine(hatParamsFromPatch(hp2,{sampleRate:ctx.sampleRate,durationSec:0.1,oversample:2},false))
-          buf=bufferFromSamples(ctx,hc)
+          buf=await loadRealSample('samples/hat.wav')||bufferFromSamples(ctx,renderHatEngine(hatParamsFromPatch(currentKitPatches['hat-closed']||{},{sampleRate:ctx.sampleRate,durationSec:0.1,oversample:2},false)))
         }else if(channel==='hat-open'){
-          const hp3=currentKitPatches['hat-open']||{}
-          const ho=renderHatEngine(hatParamsFromPatch(hp3,{sampleRate:ctx.sampleRate,durationSec:0.4,oversample:2},true))
-          buf=bufferFromSamples(ctx,ho)
+          buf=await loadRealSample('samples/hat.wav')||bufferFromSamples(ctx,renderHatEngine(hatParamsFromPatch(currentKitPatches['hat-open']||{},{sampleRate:ctx.sampleRate,durationSec:0.4,oversample:2},true)))
         }else if(channel==='tom'){
           const tp=currentKitPatches['tom']||{}
           const tk=kickParamsFromPatch(tp,{sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2})
@@ -417,10 +411,7 @@ body {
           const td=renderKickEngine(tk)
           buf=bufferFromSamples(ctx,td)
         }else if(channel==='perc'){
-          const pp=currentKitPatches['perc']||{}
-          const pk=snareParamsFromPatch(pp,{sampleRate:ctx.sampleRate,durationSec:0.12,oversample:2})
-          const pd=renderSnareEngine(pk)
-          buf=bufferFromSamples(ctx,pd)
+          buf=await loadRealSample('samples/perc.wav')||bufferFromSamples(ctx,renderSnareEngine(snareParamsFromPatch(currentKitPatches['perc']||{},{sampleRate:ctx.sampleRate,durationSec:0.12,oversample:2})))
         }else if(channel==='crash'){
           const cp=currentKitPatches['crash']||{}
           const cd=renderCymbalEngine(cymbalParamsFromPatch(cp,{sampleRate:ctx.sampleRate,durationSec:0.7,oversample:2},false))
