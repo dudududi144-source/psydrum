@@ -243,10 +243,13 @@ body {
     document.getElementById('seqPlayBtn').classList.remove('on')}
 
   // ── start audio + device ──
+  let analyser=null
   document.getElementById('startBtn').addEventListener('click',async()=>{
     if(device)return
     ctx=new AudioContext(); await ctx.resume()
-    const output=ctx.createGain(); output.gain.value=0.85; output.connect(ctx.destination)
+    const output=ctx.createGain(); output.gain.value=0.85
+    analyser=ctx.createAnalyser(); analyser.fftSize=256
+    output.connect(analyser); analyser.connect(ctx.destination)
     device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
     device.onStart()
     document.getElementById('startBtn').classList.add('on')
@@ -352,6 +355,52 @@ body {
   buildSeq()
   // default groove
   grooveSelect.value='0'; grooveSelect.dispatchEvent(new Event('change'))
+
+  // ── 3D spectrum (waterfall with perspective, PsySynthPro-style) ──
+  const viz3d=document.getElementById('viz3d')
+  const vctx=viz3d.getContext('2d')
+  const VROWS=48          // history rows
+  const VBINS=64          // frequency bins shown
+  const hist=[]
+  function hueFor(v){ return 275 - v*220 }   // violet(low) -> cyan/white(high)
+  function drawViz3d(){
+    if(analyser){
+      const fd=new Uint8Array(analyser.frequencyBinCount)
+      analyser.getByteFrequencyData(fd)
+      const row=[]
+      for(let b=0;b<VBINS;b++){
+        const idx=Math.floor(b/VBINS*fd.length*0.7)
+        row.push(fd[idx]/255)
+      }
+      hist.unshift(row)
+      if(hist.length>VROWS)hist.pop()
+    }else if(hist.length===0){
+      hist.unshift(new Array(VBINS).fill(0))
+      if(hist.length>VROWS)hist.pop()
+    }
+    const W=viz3d.width,H=viz3d.height
+    vctx.clearRect(0,0,W,H)
+    // draw history rows back-to-front with perspective
+    for(let r=hist.length-1;r>=0;r--){
+      const row=hist[r]
+      const depth=r/VROWS                      // 0 = front, 1 = back
+      const persp=1-depth*0.62                 // shrink with depth
+      const rowW=W*persp
+      const x0=(W-rowW)/2
+      const y=H-14-depth*(H-40)                // back rows higher up
+      const binW=rowW/VBINS
+      const rowAlpha=(1-depth)*0.9+0.08
+      for(let b=0;b<VBINS;b++){
+        const v=row[b]
+        const barH=Math.max(1,v*46*persp)
+        const hue=hueFor(v)
+        vctx.fillStyle='hsla('+hue+',85%,'+(45+v*35)+'%,'+rowAlpha+')'
+        vctx.fillRect(x0+b*binW,y-barH,Math.max(0.5,binW-0.6),barH)
+      }
+    }
+    requestAnimationFrame(drawViz3d)
+  }
+  drawViz3d()
 
   // PWA: register the service worker for offline support
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}) }
