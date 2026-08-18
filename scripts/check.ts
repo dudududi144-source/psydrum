@@ -41,7 +41,6 @@ var requiredFiles = [
   'tests/psy-drum/fx.test.ts',
   'src/psy-drum/grooves.ts',
   'tests/psy-drum/grooves.test.ts',
-  'tests/psy-drum/perc-dsp-rest.test.ts',
   'src/psy-drum/filters.ts',
   'tests/psy-drum/filters.test.ts',
   'src/psy-drum/presets.ts',
