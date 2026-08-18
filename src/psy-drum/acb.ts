@@ -133,3 +133,28 @@ export function renderAcbKick(p: AcbKickParams): Float32Array {
 
   return out
 }
+
+
+// Map a kit DrumPatch onto AcbKickParams (ROADMAP task A1.3).
+// This lets the kit system drive the ACB kick, so changing kit changes the
+// ACB-modeled kick sound.
+export function acbKickParamsFromPatch(
+  patch: { body?: { startHz?: number; endHz?: number; pitchDecayMs?: number }; filter?: { cutoff?: number; res?: number }; driveDb?: number },
+  d: { sampleRate: number; durationSec: number },
+): AcbKickParams {
+  const body = patch.body || {}
+  const filter = patch.filter || {}
+  return {
+    sampleRate: d.sampleRate,
+    durationSec: d.durationSec,
+    bodyStartHz: typeof body.startHz === 'number' ? body.startHz : 160,
+    bodyEndHz: typeof body.endHz === 'number' ? body.endHz : 48,
+    pitchDecayMs: typeof body.pitchDecayMs === 'number' ? body.pitchDecayMs : 45,
+    filterCutoffHz: typeof filter.cutoff === 'number' ? filter.cutoff : 400,
+    filterResonance: typeof filter.res === 'number' ? Math.max(0, Math.min(1, filter.res / 10)) : 0.6,
+    filterCutoffDecayMs: 100,
+    clickAmount: 0.4,
+    clickMs: 2,
+    driveDb: typeof patch.driveDb === 'number' ? patch.driveDb : 4,
+  }
+}
