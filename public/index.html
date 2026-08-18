@@ -377,22 +377,31 @@ body {
           const sd=renderSnareEngine(snareParamsFromPatch(sp,{sampleRate:ctx.sampleRate,durationSec:0.18,oversample:2}))
           buf=bufferFromSamples(ctx,sd)
         }else if(channel==='hat-closed'){
-          const hc=renderHatEngine({sampleRate:ctx.sampleRate,durationSec:0.1,oversample:2,open:false,metalHz:5500,ringRatio:1.34,metalAmount:0.6,noiseAmount:0.3,noiseHpHz:7000,hpHz:7500,hpQ:0.7,decayMs:45,driveDb:1})
+          const hp2=currentKitPatches['hat-closed']||{}
+          const hc=renderHatEngine(hatParamsFromPatch(hp2,{sampleRate:ctx.sampleRate,durationSec:0.1,oversample:2},false))
           buf=bufferFromSamples(ctx,hc)
         }else if(channel==='hat-open'){
-          const ho=renderHatEngine({sampleRate:ctx.sampleRate,durationSec:0.4,oversample:2,open:true,metalHz:5500,ringRatio:1.34,metalAmount:0.6,noiseAmount:0.3,noiseHpHz:7000,hpHz:7500,hpQ:0.7,decayMs:330,driveDb:1})
+          const hp3=currentKitPatches['hat-open']||{}
+          const ho=renderHatEngine(hatParamsFromPatch(hp3,{sampleRate:ctx.sampleRate,durationSec:0.4,oversample:2},true))
           buf=bufferFromSamples(ctx,ho)
         }else if(channel==='tom'){
-          const td=renderKickEngine({sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2,bodyStartHz:218,bodyEndHz:118,bodyPitchDecayMs:120,bodyDecayMs:220,punchRatio:2,punchAmount:0.15,punchDecayMs:10,clickAmount:0,clickHpHz:4000,clickMs:1,filterCutoffHz:600,filterQ:1.0,driveDb:2})
+          const tp=currentKitPatches['tom']||{}
+          const tk=kickParamsFromPatch(tp,{sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2})
+          tk.bodyStartHz=Math.max(tk.bodyStartHz,200);tk.clickAmount=0
+          const td=renderKickEngine(tk)
           buf=bufferFromSamples(ctx,td)
         }else if(channel==='perc'){
-          const pd=renderSnareEngine({sampleRate:ctx.sampleRate,durationSec:0.12,oversample:2,toneHz:640,tonePitchDropHz:80,tonePitchDecayMs:15,toneAmount:0.5,toneDecayMs:60,noiseBpHz:2600,noiseQ:1.2,noiseAmount:0.4,noiseDecayMs:70,driveDb:1.5})
+          const pp=currentKitPatches['perc']||{}
+          const pk=snareParamsFromPatch(pp,{sampleRate:ctx.sampleRate,durationSec:0.12,oversample:2})
+          const pd=renderSnareEngine(pk)
           buf=bufferFromSamples(ctx,pd)
         }else if(channel==='crash'){
-          const cd=renderCymbalEngine({sampleRate:ctx.sampleRate,durationSec:0.7,oversample:2,metalHz:3800,ringRatio:1.41,metalAmount:0.6,pingHz:0,pingAmount:0,hpHz:5000,hpQ:0.7,decayMs:700,driveDb:1})
+          const cp=currentKitPatches['crash']||{}
+          const cd=renderCymbalEngine(cymbalParamsFromPatch(cp,{sampleRate:ctx.sampleRate,durationSec:0.7,oversample:2},false))
           buf=bufferFromSamples(ctx,cd)
         }else if(channel==='ride'){
-          const rd=renderCymbalEngine({sampleRate:ctx.sampleRate,durationSec:0.5,oversample:2,metalHz:4500,ringRatio:1.41,metalAmount:0.6,pingHz:5200,pingAmount:0.5,hpHz:6000,hpQ:0.7,decayMs:520,driveDb:1})
+          const rp=currentKitPatches['ride']||{}
+          const rd=renderCymbalEngine(cymbalParamsFromPatch(rp,{sampleRate:ctx.sampleRate,durationSec:0.5,oversample:2},true))
           buf=bufferFromSamples(ctx,rd)
         }else{
           const dur=0.25
