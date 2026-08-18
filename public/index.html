@@ -132,7 +132,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, renderTomSamples, renderPercSamples, renderCymbalSamples, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderSnareEngine, renderHatEngine, renderCymbalEngine } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, renderDrumSample, renderPsyKickInto, renderSnareInto, renderHatInto, renderTomSamples, renderPercSamples, renderCymbalSamples, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -321,10 +321,16 @@ body {
   // ── kit selector ──
   const kitSelect=document.getElementById('kitSelect')
   KIT_PRESETS.forEach((k,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=k.label;kitSelect.appendChild(o)})
+  // current kit patches drive the sample loader (kit -> engine params)
+  let currentKitPatches=KIT_PRESETS[0].drums
+  function currentSampleKit(){return KIT_PRESETS[Number(kitSelect.value)]||KIT_PRESETS[0]}
   kitSelect.addEventListener('change',()=>{
     const k=KIT_PRESETS[Number(kitSelect.value)]
     if(device&&k){
       device.loadKit({id:k.id,style:k.style,humanize:true,provenance:{license:'procedural',author:'psydrum',created:'2026'},choke:{hat:'exclusive',crashMaxPoly:2,rideMaxPoly:2},drums:k.drums})
+      currentKitPatches=k.drums
+      // re-render samples with the new kit so the sound actually changes
+      if(samplesOn&&samplesLoaded){samplesLoaded=false;samplesOn=false;document.getElementById('samplesBtn').textContent='samples: off'}
     }
   })
 
