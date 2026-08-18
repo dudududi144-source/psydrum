@@ -61,6 +61,8 @@ var requiredFiles = [
   'tests/psy-drum/hat-engine.test.ts',
   'src/psy-drum/cymbal-engine.ts',
   'tests/psy-drum/cymbal-engine.test.ts',
+  'src/psy-drum/kit-to-engine.ts',
+  'tests/psy-drum/kit-to-engine.test.ts',
   'tests/psy-drum/default-kit.test.ts',
   'tests/psy-drum/kit-builtin.test.ts',
   'tests/psy-drum/voice-synth.test.ts',
