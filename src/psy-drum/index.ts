@@ -74,3 +74,6 @@ export type { KitPreset, GroovePreset } from './presets'
 
 export { renderKickEngine } from './kick-engine'
 export type { KickEngineParams } from './kick-engine'
+
+export { renderSnareEngine } from './snare-engine'
+export type { SnareEngineParams } from './snare-engine'
