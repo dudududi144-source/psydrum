@@ -133,6 +133,11 @@ body {
     </div>
     <div id="songChain" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;"></div>
   </div>
+
+  <div class="section">
+    <div class="stitle">Song Editor · structure overview</div>
+    <div id="songEditor" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
 </div>
 
 <script type="module">
@@ -614,6 +619,35 @@ body {
       applyGrooveToPattern(songChain[songPos].groove)
     }
   }
+
+  // ── Phase B (B3.4): Song Editor — visual structure overview ──
+  const songEditorEl=document.getElementById('songEditor')
+  function renderSongEditor(){
+    if(!songEditorEl)return
+    songEditorEl.innerHTML=''
+    if(songChain.length===0){
+      const hint=document.createElement('div')
+      hint.style.cssText='color:#6b6f7a;font-size:11px;'
+      hint.textContent='Add grooves above to build a song structure.'
+      songEditorEl.appendChild(hint)
+      return
+    }
+    songChain.forEach((entry,idx)=>{
+      const block=document.createElement('div')
+      block.style.cssText='background:rgba(77,208,225,0.12);border:1px solid rgba(77,208,225,0.4);border-radius:6px;padding:8px 12px;font-size:11px;color:#e8e2ff;text-align:center;min-width:60px;'
+      block.innerHTML='<div style="font-weight:600;">'+GROOVE_PRESETS[entry.groove].label+'</div><div style="color:#4dd0e1;">'+entry.bars+' bar'+(entry.bars>1?'s':'')+'</div>'
+      songEditorEl.appendChild(block)
+      if(idx<songChain.length-1){
+        const arrow=document.createElement('div')
+        arrow.style.cssText='color:#6b6f7a;align-self:center;'
+        arrow.textContent='→'
+        songEditorEl.appendChild(arrow)
+      }
+    })
+  }
+  // hook into renderSongChain so the editor stays in sync
+  const _origRenderSongChain=renderSongChain
+  renderSongChain=function(){_origRenderSongChain();renderSongEditor()}
 
   // ── initial render ──
   buildSeq()
