@@ -158,3 +158,88 @@ export function acbKickParamsFromPatch(
     driveDb: typeof patch.driveDb === 'number' ? patch.driveDb : 4,
   }
 }
+
+
+// ACB snare (ROADMAP A2.1): tonal body + resonant band-passed noise via SVF.
+export interface AcbSnareParams {
+  sampleRate: number
+  durationSec: number
+  toneHz: number
+  tonePitchDropHz: number
+  toneAmount: number
+  noiseBpHz: number
+  noiseResonance: number
+  noiseAmount: number
+  noiseDecayMs: number
+  toneDecayMs: number
+  driveDb: number
+}
+
+export function renderAcbSnare(p: AcbSnareParams): Float32Array {
+  const sr = p.sampleRate
+  const n = Math.max(1, Math.floor(sr * p.durationSec))
+  const out = new Float32Array(n)
+  const svf = new SVF(sr, p.noiseBpHz, p.noiseResonance)
+  const noiseDecay = Math.max(0.01, p.noiseDecayMs / 1000)
+  const toneDecay = Math.max(0.01, p.toneDecayMs / 1000)
+  const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
+  let tonePhase = 0
+  let noiseState = 0x9e3779b9 >>> 0
+  for (let i = 0; i < n; i++) {
+    const t = i / sr
+    const toneHz = Math.max(40, p.toneHz - p.tonePitchDropHz * (1 - Math.exp(-t / 0.02)))
+    tonePhase += toneHz / sr
+    if (tonePhase >= 1) tonePhase -= Math.floor(tonePhase)
+    const tone = Math.sin(2 * Math.PI * tonePhase) * Math.exp(-t / toneDecay) * p.toneAmount
+    noiseState ^= noiseState << 13
+    noiseState ^= noiseState >>> 17
+    noiseState ^= noiseState << 5
+    const noise = ((noiseState >>> 0) / 4294967296) * 2 - 1
+    const bp = svf.process(noise).band
+    const noiseSig = bp * Math.exp(-t / noiseDecay) * p.noiseAmount
+    let sig = (tone + noiseSig) * Math.min(1, t / 0.001)
+    sig = Math.tanh(sig * drive)
+    sig = Math.tanh(sig)
+    out[i] = sig
+  }
+  return out
+}
+
+// ACB hat (ROADMAP A2.2): ring-mod metallic source through resonant high-pass.
+export interface AcbHatParams {
+  sampleRate: number
+  durationSec: number
+  metalHz: number
+  ringRatio: number
+  hpHz: number
+  hpResonance: number
+  decayMs: number
+  driveDb: number
+}
+
+export function renderAcbHat(p: AcbHatParams): Float32Array {
+  const sr = p.sampleRate
+  const n = Math.max(1, Math.floor(sr * p.durationSec))
+  const out = new Float32Array(n)
+  const svf = new SVF(sr, p.hpHz, p.hpResonance)
+  const decay = Math.max(0.005, p.decayMs / 1000)
+  const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
+  let ph1 = 0
+  let ph2 = 0
+  for (let i = 0; i < n; i++) {
+    const t = i / sr
+    ph1 += p.metalHz / sr
+    if (ph1 >= 1) ph1 -= Math.floor(ph1)
+    ph2 += (p.metalHz * p.ringRatio) / sr
+    if (ph2 >= 1) ph2 -= Math.floor(ph2)
+    const sq1 = ph1 < 0.5 ? 1 : -1
+    const sq2 = ph2 < 0.5 ? 1 : -1
+    const metal = sq1 * sq2
+    const hp = svf.process(metal).high
+    let sig = hp * Math.exp(-t / decay) * Math.min(1, t / 0.0008)
+    sig = Math.tanh(sig * drive)
+    sig = Math.tanh(sig)
+    out[i] = sig
+  }
+  return out
+}
