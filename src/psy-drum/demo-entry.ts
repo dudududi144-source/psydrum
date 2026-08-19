@@ -21,3 +21,5 @@ export { TransportClock } from './transport'
 export { StepSequencer } from './sequencer'
 
 export { loadSample, loadSampleMap } from './sample-loader'
+
+export { MotionRecorder } from './motion'
