@@ -166,8 +166,8 @@ velocity 64, וההבדל מדיד ספקטרלית.
 
 #### C3: Real-time Parameter Display
 - [x] **C3.1**: תצוגת ערך נוכחי לכל פרמטר ✅ real-time master param display
-- [ ] **C3.2**: עדכון בזמן אמת בזמן שינוי
-- [ ] **C3.3**: Visual feedback (glow, animation)
+- [x] **C3.2**: עדכון בזמן אמת בזמן שינוי ✅ visual feedback glow
+- [x] **C3.3**: Visual feedback (glow, animation) ✅ knob-active glow
 
 **קריטריון קבלה**: שינוי פרמטר מציג את הערך החדש תוך <50ms.
 
@@ -210,7 +210,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | B: Sequencer Engine | 14 | 9 | 🟡 בתהליך |
 | C: UX | 11 | 7 | 🟡 מתקדם |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **31** | **~60%** |
+| **סה"כ** | **52** | **33** | **~63%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -233,6 +233,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | C2.3 drag-paint editing | ✅ | multi-step editing via drag-paint |
 | 2026-08-18 | C2.4 live position display | ✅ | bar/step position display |
 | 2026-08-18 | C3.1 master param display | ✅ | real-time master parameter display |
+| 2026-08-18 | C3.2/C3.3 knob visual feedback | ✅ | glow on knob change |
 
 ---
 
