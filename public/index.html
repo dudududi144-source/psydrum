@@ -121,6 +121,7 @@ body {
 
   <div class="section">
     <div class="stitle">Master · Tempo & Feel</div>
+    <div id="paramDisplay" style="font-size:11px;color:#8a8f9a;margin-bottom:8px;min-height:14px;"></div>
     <div class="krow" id="masterKnobs"></div>
   </div>
 
@@ -413,10 +414,10 @@ body {
 
   // ── master knobs (bpm, swing, delay send, reverb send) ──
   const masterKnobs=document.getElementById('masterKnobs')
-  new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v}})
-  new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v}})
-  new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{liveDrive=v;if(drivePreGain)drivePreGain.gain.value=1+v/100*6}})
-  new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{liveReverb=v;if(masterReverbGain)masterReverbGain.gain.value=v/100}})
+  new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{liveDrive=v;if(drivePreGain)drivePreGain.gain.value=1+v/100*6;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{liveReverb=v;if(masterReverbGain)masterReverbGain.gain.value=v/100;updateParamDisplay()}})
   new Knob(masterKnobs,{label:'Comp',min:0,max:100,def:50,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(masterComp)masterComp.ratio.value=1+v/100*11}})
   new Knob(masterKnobs,{label:'Delay',min:0,max:100,def:0,color:'#ffb74d',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumDelaySend(ch,v/100)}})
   new Knob(masterKnobs,{label:'Reverb',min:0,max:100,def:0,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumReverbSend(ch,v/100)}})
@@ -703,6 +704,12 @@ body {
   const styles=[]
   KIT_PRESETS.forEach(k=>{if(k.style && styles.indexOf(k.style)<0)styles.push(k.style)})
   styles.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;kitStyleFilter.appendChild(o)})
+  // Phase C (C3.1): real-time master parameter display
+  function updateParamDisplay(){
+    const pd=document.getElementById('paramDisplay')
+    if(!pd)return
+    pd.textContent='BPM '+Math.round(bpm)+' · Swing '+Math.round(swing)+'% · Drive '+Math.round(liveDrive)+'% · Reverb '+Math.round(liveReverb)+'%'
+  }
   function renderKitBrowser(){
     if(!kitResults)return
     kitResults.innerHTML=''
