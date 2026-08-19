@@ -165,7 +165,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 **קריטריון קבלה**: ניתן לראות ולערוך את כל התבנית במבט אחד.
 
 #### C3: Real-time Parameter Display
-- [ ] **C3.1**: תצוגת ערך נוכחי לכל פרמטר
+- [x] **C3.1**: תצוגת ערך נוכחי לכל פרמטר ✅ real-time master param display
 - [ ] **C3.2**: עדכון בזמן אמת בזמן שינוי
 - [ ] **C3.3**: Visual feedback (glow, animation)
 
@@ -208,9 +208,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
 | B: Sequencer Engine | 14 | 9 | 🟡 בתהליך |
-| C: UX | 11 | 6 | 🟡 מתקדם |
+| C: UX | 11 | 7 | 🟡 מתקדם |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **30** | **~58%** |
+| **סה"כ** | **52** | **31** | **~60%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -232,6 +232,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | C2.2 per-drum colors | ✅ | unique color per drum in pattern view |
 | 2026-08-18 | C2.3 drag-paint editing | ✅ | multi-step editing via drag-paint |
 | 2026-08-18 | C2.4 live position display | ✅ | bar/step position display |
+| 2026-08-18 | C3.1 master param display | ✅ | real-time master parameter display |
 
 ---
 
