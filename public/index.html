@@ -743,6 +743,14 @@ body {
   if(kitStyleFilter)kitStyleFilter.addEventListener('change',renderKitBrowser)
   renderKitBrowser()
 
+  // Global error capture: surface runtime errors in the UI for debugging
+  window.addEventListener('error',(e)=>{
+    const box=document.createElement('div')
+    box.style.cssText='background:#2b1216;border:1px solid #ff5566;border-radius:8px;padding:10px;margin:10px;color:#ff8899;font-size:12px;'
+    box.textContent='Runtime error: '+(e.message||'unknown')+' @ '+(e.filename||'')
+    document.body.prepend(box)
+  })
+
   // ── initial render ──
   buildSeq()
 
