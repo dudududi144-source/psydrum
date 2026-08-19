@@ -81,3 +81,6 @@ export { kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalPa
 
 export { SVF, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch } from './acb'
 export type { AcbKickParams, AcbSnareParams, AcbHatParams } from './acb'
+
+export { TransportClock } from './transport'
+export type { TransportSubscriber } from './transport'
