@@ -87,3 +87,5 @@ export type { TransportSubscriber } from './transport'
 
 export { StepSequencer } from './sequencer'
 export type { SequencerOptions } from './sequencer'
+
+export { loadSample, loadSampleMap } from './sample-loader'
