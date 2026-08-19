@@ -309,8 +309,13 @@ body {
       seqEl.appendChild(row)
     }
   }
+  let barCounter=1
   function setPlayhead(step){
     for(let r=0;r<DRUMS.length;r++) for(let s=0;s<STEPS;s++) playheadCells[r][s].classList.toggle('ph', s===step)
+    // Phase C (C2.4): live bar/step position display
+    if(step===0)barCounter++
+    const pd=document.getElementById('posDisplay')
+    if(pd)pd.textContent='bar '+barCounter+' · step '+(step+1)
   }
   function refreshGrid(){
     const rows=seqEl.querySelectorAll('.seqrow')
