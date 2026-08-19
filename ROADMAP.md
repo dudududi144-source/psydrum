@@ -160,7 +160,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 - [ ] **C2.1**: תצוגת כל 16 הצעדים לכל התופים בבת אחת
 - [x] **C2.2**: צבעים ייחודיים לכל תוף ✅ per-drum colors
 - [x] **C2.3**: עריכה מרובת-צעדים (multi-select) ✅ drag-paint multi-step editing
-- [ ] **C2.4**: Visual playhead עם highlight
+- [x] **C2.4**: Visual playhead עם highlight ✅ live bar/step position display
 
 **קריטריון קבלה**: ניתן לראות ולערוך את כל התבנית במבט אחד.
 
@@ -208,9 +208,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
 | B: Sequencer Engine | 14 | 9 | 🟡 בתהליך |
-| C: UX | 11 | 5 | 🟡 בתהליך |
+| C: UX | 11 | 6 | 🟡 מתקדם |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **29** | **~56%** |
+| **סה"כ** | **52** | **30** | **~58%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -231,6 +231,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | C1 Kit Browser | ✅ | search + style filter + click-to-load |
 | 2026-08-18 | C2.2 per-drum colors | ✅ | unique color per drum in pattern view |
 | 2026-08-18 | C2.3 drag-paint editing | ✅ | multi-step editing via drag-paint |
+| 2026-08-18 | C2.4 live position display | ✅ | bar/step position display |
 
 ---
 
