@@ -254,6 +254,8 @@ body {
     set(v,silent){
       this.value=Math.min(this.max,Math.max(this.min,v)); this.render()
       if(!silent) this.onChange(this.value)
+      // Phase C (C3.2/C3.3): brief visual feedback on change
+      if(this.zone){this.zone.classList.add('knob-active');clearTimeout(this._fbT);this._fbT=setTimeout(()=>{this.zone.classList.remove('knob-active')},250)}
     }
     render(){
       const p=this.norm(); const a1=-135+270*p
