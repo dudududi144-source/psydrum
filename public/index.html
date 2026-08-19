@@ -159,6 +159,8 @@ body {
 <script type="module">
   import { createDrumDevice, BUILTIN_KIT_MANIFEST, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, TransportClock, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
 
+  // Phase C (C2.2): unique color per drum for the pattern view
+  const DRUM_COLORS=['#b388ff','#ff7043','#4dd0e1','#81c784','#ffb74d','#f48fb1','#a1887f','#90a4ae','#fff176']
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
     ['HAT-C',42,'hat-closed'], ['HAT-O',46,'hat-open'], ['TOM',45,'tom'],
