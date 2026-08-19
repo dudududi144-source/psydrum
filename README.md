@@ -74,3 +74,9 @@ Drums are not "just another sampler voice". They need: choke groups (open hat ch
 - No secrets anywhere (`secret-scan` step in CI).
 - README + 3 architecture docs consistent with shipped code.
 - No quarantined/unlicensed samples. All drum sources procedural or CC0 with provenance.
+
+## Architecture Documentation
+
+- `docs/ARCHITECTURE.md` - Professional architecture blueprint (layering, contracts, testing, quality gates).
+- `docs/ADRS.md` - Architecture Decision Records (ADR-001..007).
+- `ROADMAP.md` - Execution roadmap with tracking.
