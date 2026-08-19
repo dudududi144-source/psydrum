@@ -75,6 +75,10 @@ body {
 .mixrow { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
 .mixcell { display:flex; flex-direction:column; align-items:center; gap:3px; width:56px; }
 .mixcell .mlabel { font-size:9px; letter-spacing:0.05em; text-transform:uppercase; color:#8a8e98; }
+
+  /* Phase C (C3.2/C3.3): visual feedback glow while a knob is being changed */
+  .knob.knob-active svg{filter:drop-shadow(0 0 6px currentColor)}
+  .knob.knob-active .klabel{color:#fff}
 </style>
 </head>
 <body>
