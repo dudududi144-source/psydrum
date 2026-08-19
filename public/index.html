@@ -152,6 +152,9 @@ body {
   const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
   // Phase B (B1.4): per-step trigger probability (1.0 = always). right-click a step to cycle 100%->75%->50%->25%.
   const stepProb = DRUMS.map(() => new Array(STEPS).fill(1.0))
+  // Phase B (B1.5): per-step 'follow kick' conditional trigger (alt+click)
+  const followKick = DRUMS.map(() => new Array(STEPS).fill(false))
+  let prevStepTriggeredKick=false
 
   // Real drum samples (commercial-quality, from psy5) mapped per channel.
   const REAL_SAMPLES = {
@@ -272,6 +275,11 @@ body {
           stepProb[r][s] = cur>=1.0 ? 0.75 : cur>=0.75 ? 0.5 : cur>=0.5 ? 0.25 : 1.0
           cell.style.opacity = pattern[r][s] ? String(0.35+0.65*stepProb[r][s]) : ''
         })
+        cell.addEventListener('dblclick',(e)=>{
+          // Phase B (B1.5): toggle 'follow kick' conditional
+          followKick[r][s]=!followKick[r][s]
+          cell.style.outline = followKick[r][s] ? '2px solid #ff7043' : ''
+        })
         row.appendChild(cell); playheadCells[r].push(cell)
       }
       seqEl.appendChild(row)
@@ -293,9 +301,13 @@ body {
       const snareNote=38
       device.onEvent({type:'note',note:snareNote,velocity:112+ (step-12)*5,duration:0.1,channel:'snare',at:when})
     }
+    let thisStepKick=false
     for(let r=0;r<DRUMS.length;r++) if(pattern[r][step]){
+      // Phase B (B1.5): follow-kick conditional gate
+      if(followKick[r][step] && !prevStepTriggeredKick) continue
       // Phase B (B1.4): probability gate
       if(Math.random() > stepProb[r][step]) continue
+      if(DRUMS[r][2]==='kick') thisStepKick=true
       const[,note,channel]=DRUMS[r]
       const rt=retrigger[r][step]
       const stepDur=secondsPerStep()
@@ -312,6 +324,7 @@ body {
     // Phase B (B2): record/playback motion automation per step
     if(motionRec){motionDrive[step]=liveDrive;motionReverb[step]=liveReverb}
     applyMotionStep(step)
+    prevStepTriggeredKick=thisStepKick
     const delayMs=Math.max(0,(when-ctx.currentTime)*1000)
     setTimeout(()=>setPlayhead(step),delayMs)
   }
