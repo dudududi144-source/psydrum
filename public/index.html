@@ -104,6 +104,17 @@ body {
   </div>
 
   <div class="section">
+    <div class="stitle">Kit Browser · search & filter</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="kitSearch" type="text" placeholder="search kits..." style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px 10px;color:#e8e2ff;font-size:12px;width:180px;">
+      <select id="kitStyleFilter" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px;color:#e8e2ff;font-size:12px;">
+        <option value="">all styles</option>
+      </select>
+      <div id="kitResults" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="stitle">Step Sequencer · 16 steps</div>
     <div class="seqgrid" id="seq"></div>
   </div>
@@ -665,6 +676,36 @@ body {
   // hook into renderSongChain so the editor stays in sync
   const _origRenderSongChain=renderSongChain
   renderSongChain=function(){_origRenderSongChain();renderSongEditor()}
+
+  // ── Phase C (C1): Kit Browser — search & filter kit presets ──
+  const kitSearch=document.getElementById('kitSearch')
+  const kitStyleFilter=document.getElementById('kitStyleFilter')
+  const kitResults=document.getElementById('kitResults')
+  // populate style filter with unique styles
+  const styles=[]
+  KIT_PRESETS.forEach(k=>{if(k.style && styles.indexOf(k.style)<0)styles.push(k.style)})
+  styles.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;kitStyleFilter.appendChild(o)})
+  function renderKitBrowser(){
+    if(!kitResults)return
+    kitResults.innerHTML=''
+    const q=(kitSearch.value||'').toLowerCase()
+    const sf=kitStyleFilter.value
+    KIT_PRESETS.forEach((k,ki)=>{
+      if(q && k.label.toLowerCase().indexOf(q)<0)return
+      if(sf && k.style!==sf)return
+      const chip=document.createElement('div')
+      chip.style.cssText='background:rgba(179,136,255,0.12);border:1px solid rgba(179,136,255,0.35);border-radius:6px;padding:5px 10px;font-size:11px;color:#e8e2ff;cursor:pointer;'
+      chip.textContent=k.label+(k.style?' · '+k.style:'')
+      chip.addEventListener('click',()=>{
+        const sel=document.getElementById('kitSelect')
+        if(sel){sel.value=String(ki);sel.dispatchEvent(new Event('change'))}
+      })
+      kitResults.appendChild(chip)
+    })
+  }
+  if(kitSearch)kitSearch.addEventListener('input',renderKitBrowser)
+  if(kitStyleFilter)kitStyleFilter.addEventListener('change',renderKitBrowser)
+  renderKitBrowser()
 
   // ── initial render ──
   buildSeq()
