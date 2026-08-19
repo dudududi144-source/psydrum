@@ -84,3 +84,6 @@ export type { AcbKickParams, AcbSnareParams, AcbHatParams } from './acb'
 
 export { TransportClock } from './transport'
 export type { TransportSubscriber } from './transport'
+
+export { StepSequencer } from './sequencer'
+export type { SequencerOptions } from './sequencer'
