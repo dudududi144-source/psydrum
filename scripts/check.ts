@@ -54,6 +54,8 @@ var requiredFiles = [
   'tests/psy-drum/sequencer.test.ts',
   'src/psy-drum/sample-loader.ts',
   'tests/psy-drum/sample-loader.test.ts',
+  'src/psy-drum/motion.ts',
+  'tests/psy-drum/motion.test.ts',
   'tests/psy-drum/kick-engine.test.ts',
   'src/psy-drum/snare-engine.ts',
   'tests/psy-drum/snare-engine.test.ts',
