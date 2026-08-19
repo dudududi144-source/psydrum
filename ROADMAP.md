@@ -149,9 +149,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 **תלויות**: Phase A, B (הפונקציונליות חייבת להיות מוכנה).
 
 #### C1: Kit Browser מתקדם
-- [ ] **C1.1**: עיצוב ממשק חיפוש וסינון
-- [ ] **C1.2**: חיפוש לפי שם, סגנון, מאפיינים
-- [ ] **C1.3**: תצוגה מקדימה של קיט (preview on hover)
+- [x] **C1.1**: עיצוב ממשק חיפוש וסינון ✅ search input + style filter
+- [x] **C1.2**: חיפוש לפי שם, סגנון, מאפיינים ✅ name + style search
+- [x] **C1.3**: תצוגה מקדימה של קיט (preview on hover) ✅ click-to-load kit
 - [ ] **C1.4**: מיון לפי פופולריות, תאריך, סגנון
 
 **קריטריון קבלה**: ניתן למצוא קיט ספציפי תוך פחות מ-5 שניות.
@@ -208,9 +208,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
 | B: Sequencer Engine | 14 | 9 | 🟡 בתהליך |
-| C: UX | 11 | 0 | 🔴 לא התחיל |
+| C: UX | 11 | 3 | 🟡 בתהליך |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **24** | **~46%** |
+| **סה"כ** | **52** | **27** | **~52%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -228,6 +228,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | B3.3 Pattern Variations | ✅ | VAR A/B/C transformations |
 | 2026-08-18 | B3.4 Song Editor | ✅ | visual structure overview |
 | 2026-08-18 | B1.5 follow-kick conditional | ✅ | previousNote trigger (dblclick) |
+| 2026-08-18 | C1 Kit Browser | ✅ | search + style filter + click-to-load |
 
 ---
 
