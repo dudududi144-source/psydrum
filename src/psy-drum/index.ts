@@ -89,3 +89,6 @@ export { StepSequencer } from './sequencer'
 export type { SequencerOptions } from './sequencer'
 
 export { loadSample, loadSampleMap } from './sample-loader'
+
+export { MotionRecorder } from './motion'
+export type { MotionTrack } from './motion'
