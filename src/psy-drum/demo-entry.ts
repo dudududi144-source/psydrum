@@ -3,7 +3,8 @@
 
 export { createDrumDevice, DrumDevice } from './device'
 export type { DrumDeviceOptions } from './device'
-export { loadKitManifest, BUILTIN_KIT_MANIFEST } from './kit-builtin'
+export { loadKitManifest } from './kit-library'
+export { BUILTIN_KIT_MANIFEST } from './kit-builtin'
 export { GROOVE_TEMPLATES, parsePattern } from './grooves'
 export { KIT_PRESETS, GROOVE_PRESETS, findGroovePreset } from './presets'
 export { renderKickEngine } from './kick-engine'
