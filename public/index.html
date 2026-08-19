@@ -157,7 +157,7 @@ body {
 </div>
 
 <script type="module">
-  import { createDrumDevice, BUILTIN_KIT_MANIFEST, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, TransportClock, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
 
   const DRUMS = [
     ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
@@ -198,6 +198,8 @@ body {
   const retrigger = DRUMS.map(() => new Array(STEPS).fill(1))
 
   let ctx=null, device=null, masterReverbGain=null, masterComp=null
+  // Phase D (D1): shared transport clock (BPM owner) for PSY-family sync
+  const transport=new TransportClock()
   let bpm=138, swing=0
   let seqPlaying=false, seqStep=0, seqNextTime=0, seqTimer=null
   // Phase C (C2.3): drag-paint state for multi-step editing
@@ -420,7 +422,7 @@ body {
 
   // ── master knobs (bpm, swing, delay send, reverb send) ──
   const masterKnobs=document.getElementById('masterKnobs')
-  new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v;transport.setBpm(v);updateParamDisplay()}})
   new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v;updateParamDisplay()}})
   new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{liveDrive=v;if(drivePreGain)drivePreGain.gain.value=1+v/100*6;updateParamDisplay()}})
   new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{liveReverb=v;if(masterReverbGain)masterReverbGain.gain.value=v/100;updateParamDisplay()}})
