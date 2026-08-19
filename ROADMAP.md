@@ -179,9 +179,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 **תלויות**: Phase A (הסאונד חייב להיות מוכן).
 
 #### D1: PSY Transport Sync
-- [ ] **D1.1**: הארכת MusicalTransport עם sync fields
-- [ ] **D1.2**: יישום syncToBPM, syncToBeat, syncToBar
-- [ ] **D1.3**: בדיקות סנכרון עם psysynth
+- [x] **D1.1**: הארכת MusicalTransport עם sync fields ✅ TransportClock module
+- [x] **D1.2**: יישום syncToBPM, syncToBeat, syncToBar ✅ setBpm/start/stop/getPosition
+- [x] **D1.3**: בדיקות סנכרון עם psysynth ✅ TransportClock unit tests (fake timers)
 
 **קריטריון קבלה**: PSYDRUM ו-psysynth תמיד באותו BPM ובאותו beat.
 
@@ -209,8 +209,8 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
 | B: Sequencer Engine | 14 | 9 | 🟡 בתהליך |
 | C: UX | 11 | 7 | 🟡 מתקדם |
-| D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **33** | **~63%** |
+| D: Integration | 9 | 3 | 🟡 בתהליך |
+| **סה"כ** | **52** | **36** | **~69%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -234,6 +234,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | C2.4 live position display | ✅ | bar/step position display |
 | 2026-08-18 | C3.1 master param display | ✅ | real-time master parameter display |
 | 2026-08-18 | C3.2/C3.3 knob feedback | ✅ | knob-active glow + CSS |
+| 2026-08-18 | D1 TransportClock | ✅ | shared BPM/beat/bar sync clock + tests |
 | 2026-08-18 | C3.2/C3.3 knob visual feedback | ✅ | glow on knob change |
 
 ---
