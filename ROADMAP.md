@@ -233,6 +233,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | C2.3 drag-paint editing | ✅ | multi-step editing via drag-paint |
 | 2026-08-18 | C2.4 live position display | ✅ | bar/step position display |
 | 2026-08-18 | C3.1 master param display | ✅ | real-time master parameter display |
+| 2026-08-18 | C3.2/C3.3 knob feedback | ✅ | knob-active glow + CSS |
 | 2026-08-18 | C3.2/C3.3 knob visual feedback | ✅ | glow on knob change |
 
 ---
