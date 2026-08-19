@@ -195,6 +195,8 @@ body {
   let ctx=null, device=null, masterReverbGain=null, masterComp=null
   let bpm=138, swing=0
   let seqPlaying=false, seqStep=0, seqNextTime=0, seqTimer=null
+  // Phase C (C2.3): drag-paint state for multi-step editing
+  let paintMode=null
   let playheadCells=[]
 
   // ── SVG knob (port of PsySynthPro's Knob) ──
@@ -243,6 +245,7 @@ body {
       this.zone.addEventListener('pointerup',up)
       window.addEventListener('pointermove',move)
       window.addEventListener('pointerup',up)
+      window.addEventListener('pointerup',()=>{paintMode=null})
       this.zone.addEventListener('wheel',e=>{e.preventDefault();const span=self.max-self.min
         self.set(self.value+(e.deltaY<0?1:-1)*span/50,true)},{passive:false})
       this.zone.addEventListener('dblclick',()=>{self.set(self.cfg.def!==undefined?self.cfg.def:self.min,true)})
@@ -277,6 +280,15 @@ body {
             cell.textContent=retrigger[r][s]>1?String(retrigger[r][s]):''
           }else{
             pattern[r][s]=!pattern[r][s]
+            paintMode=pattern[r][s]
+            cell.classList.toggle('on',pattern[r][s])
+          }
+        })
+        cell.addEventListener('pointerover',(e)=>{
+          // Phase C (C2.3): drag-paint while the primary button is held
+          if(paintMode===null)return
+          if(e.buttons&1){
+            pattern[r][s]=paintMode
             cell.classList.toggle('on',pattern[r][s])
           }
         })
