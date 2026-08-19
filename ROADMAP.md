@@ -158,7 +158,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 
 #### C2: Pattern View מפורט
 - [ ] **C2.1**: תצוגת כל 16 הצעדים לכל התופים בבת אחת
-- [ ] **C2.2**: צבעים ייחודיים לכל תוף
+- [x] **C2.2**: צבעים ייחודיים לכל תוף ✅ per-drum colors
 - [ ] **C2.3**: עריכה מרובת-צעדים (multi-select)
 - [ ] **C2.4**: Visual playhead עם highlight
 
@@ -208,9 +208,9 @@ velocity 64, וההבדל מדיד ספקטרלית.
 |-------|---------|---------|--------|
 | A: Sound Engine | 18 | 15 | 🟢 כמעט הושלם |
 | B: Sequencer Engine | 14 | 9 | 🟡 בתהליך |
-| C: UX | 11 | 3 | 🟡 בתהליך |
+| C: UX | 11 | 4 | 🟡 בתהליך |
 | D: Integration | 9 | 0 | 🔴 לא התחיל |
-| **סה"כ** | **52** | **27** | **~52%** |
+| **סה"כ** | **52** | **28** | **~54%** |
 
 ### לוג שינויים (Change Log)
 | תאריך | משימה | סטטוס | הערות |
@@ -229,6 +229,7 @@ velocity 64, וההבדל מדיד ספקטרלית.
 | 2026-08-18 | B3.4 Song Editor | ✅ | visual structure overview |
 | 2026-08-18 | B1.5 follow-kick conditional | ✅ | previousNote trigger (dblclick) |
 | 2026-08-18 | C1 Kit Browser | ✅ | search + style filter + click-to-load |
+| 2026-08-18 | C2.2 per-drum colors | ✅ | unique color per drum in pattern view |
 
 ---
 
