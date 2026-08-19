@@ -9,7 +9,7 @@ import { build } from 'bun'
 import { mkdirSync } from 'node:fs'
 
 const out = await build({
-  entrypoints: ['./src/psy-drum/index.ts'],
+  entrypoints: ['./src/psy-drum/demo-entry.ts'],
   outdir: './public',
   target: 'browser',
   format: 'esm',
