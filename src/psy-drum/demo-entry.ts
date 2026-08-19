@@ -19,3 +19,5 @@ export { kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalPa
 export { renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch } from './acb'
 export { TransportClock } from './transport'
 export { StepSequencer } from './sequencer'
+
+export { loadSample, loadSampleMap } from './sample-loader'
