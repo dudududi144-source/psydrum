@@ -1,0 +1,20 @@
+// Demo-only entry point. Exports only what public/index.html imports so the
+// demo bundle stays small. The full library API remains in index.ts.
+
+export { createDrumDevice, DrumDevice } from './device'
+export type { DrumDeviceOptions } from './device'
+export { loadKitManifest, BUILTIN_KIT_MANIFEST } from './kit-builtin'
+export { GROOVE_TEMPLATES, parsePattern } from './grooves'
+export { KIT_PRESETS, GROOVE_PRESETS, findGroovePreset } from './presets'
+export { renderKickEngine } from './kick-engine'
+export type { KickEngineParams } from './kick-engine'
+export { renderSnareEngine } from './snare-engine'
+export type { SnareEngineParams } from './snare-engine'
+export { renderHatEngine } from './hat-engine'
+export type { HatEngineParams } from './hat-engine'
+export { renderCymbalEngine } from './cymbal-engine'
+export type { CymbalEngineParams } from './cymbal-engine'
+export { kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './kit-to-engine'
+export { renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch } from './acb'
+export { TransportClock } from './transport'
+export { StepSequencer } from './sequencer'
