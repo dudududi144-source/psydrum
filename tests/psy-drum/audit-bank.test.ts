@@ -200,7 +200,11 @@ describe('audit M2 - bank playback (useBank on)', () => {
   it('non-banked clap falls through to realtime synthesis', () => {
     const { trigger } = makeBankDevice(true)
     const c = trigger(39, 'clap')
-    expect(c.voiceOscs.length).toBeGreaterThanOrEqual(1)
+    // clap synthesis is noise-only (buildClap: 3 stacked band-passed noise
+    // voices, zero oscillators) — assert the noise voices, not oscillators.
+    expect(c.voiceOscs.length).toBe(0)
+    expect(c.voiceSources.length).toBeGreaterThanOrEqual(3)
+    expect(c.voiceGains.length).toBeGreaterThanOrEqual(3)
   })
 
   it('choked bank voices still ramp out (V4 machinery applies)', () => {
