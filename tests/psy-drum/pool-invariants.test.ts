@@ -134,13 +134,25 @@ describe('I7 - chokeRole frees exactly min(requested, active)', () => {
   it('chokes the requested count and never more', () => {
     const pool = createVoicePool(8)
     const counters = createCounters()
-    for (let i = 0; i < 3; i++) allocVoice(pool, 'crash', 'crash', i, counters)
-    const choked = chokeRole(pool, 'crash', 2, counters)
+    // hat-closed cap is 4, so three allocs coexist (crash cap is 2 — see below)
+    for (let i = 0; i < 3; i++) allocVoice(pool, 'hat-closed', 'hat-closed', i, counters)
+    const choked = chokeRole(pool, 'hat-closed', 2, counters)
     expect(choked).toBe(2)
-    expect(countActiveForRole(pool, 'crash')).toBe(1)
-    const chokedMore = chokeRole(pool, 'crash', 5, counters)
+    expect(countActiveForRole(pool, 'hat-closed')).toBe(1)
+    const chokedMore = chokeRole(pool, 'hat-closed', 5, counters)
     expect(chokedMore).toBe(1) // only one left
-    expect(countActiveForRole(pool, 'crash')).toBe(0)
+    expect(countActiveForRole(pool, 'hat-closed')).toBe(0)
+  })
+
+  it('cap enforcement: crash cap 2 steals the third concurrent crash', () => {
+    // This is the near-miss that broke the first version of this test: with
+    // cap 2, the third crash alloc steals the oldest — proof the anti-starve
+    // caps fire at alloc time (I3), captured here intentionally.
+    const pool = createVoicePool(8)
+    const counters = createCounters()
+    for (let i = 0; i < 3; i++) allocVoice(pool, 'crash', 'crash', i, counters)
+    expect(countActiveForRole(pool, 'crash')).toBe(2)
+    expect(counters.voicesStolen).toBe(1)
   })
 })
 
