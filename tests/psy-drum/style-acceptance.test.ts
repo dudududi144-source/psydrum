@@ -98,7 +98,7 @@ function makeStyledDevice(optsSeed: number, noteMap?: Record<number, DrumRole>) 
     device.onEvent({ type: 'note', note: note, velocity: velocity, duration: 0.1, channel: channel, at: 0 })
     return { voiceGains: gains.slice(g0), voiceBiquads: biquads.slice(b0) }
   }
-  return { device, trigger, gains, oscs, sources, biquads }
+  return { device, trigger, gains, oscs, sources, biquads, ctx }
 }
 
 function rampTo(g: RecGain, target: number): { v: number; t: number } | null {
@@ -239,10 +239,14 @@ describe('style 6 - crash self-choke honors maxPoly 2', () => {
 
 describe('style 7 - rapid note-off cycles leave no zombies', () => {
   it('every released hat gets a real release ramp', () => {
-    const { device, trigger } = makeStyledDevice(3)
+    const { device, trigger, ctx } = makeStyledDevice(3)
     const hats: Array<{ voiceGains: RecGain[] }> = []
     for (let i = 0; i < 3; i++) {
+      // advance the clock: releasedAt === 0 is the pool's never-released
+      // sentinel, and a real AudioContext time is never frozen at 0.
+      ctx.currentTime = 0.01 * (i * 2 + 1)
       hats.push(trigger(42, 'hat-closed', 100))
+      ctx.currentTime = 0.01 * (i * 2 + 2)
       device.onEvent({ type: 'note', note: 42, velocity: 0, duration: 0, channel: 'hat-closed', at: 0 })
     }
     for (const h of hats) {
@@ -252,9 +256,10 @@ describe('style 7 - rapid note-off cycles leave no zombies', () => {
   })
 
   it('a held ride is not released until note-off', () => {
-    const { device, trigger } = makeStyledDevice(3)
+    const { device, trigger, ctx } = makeStyledDevice(3)
     const ride = trigger(51, 'ride', 100)
     expect(rampTo(ride.voiceGains[0], CHOKE_TARGET_GAIN)).toBeNull() // still ringing
+    ctx.currentTime = 0.05 // releasedAt === 0 is the never-released sentinel
     device.onEvent({ type: 'note', note: 51, velocity: 0, duration: 0, channel: 'ride', at: 0 })
     expect(rampTo(ride.voiceGains[0], CHOKE_TARGET_GAIN)).not.toBeNull()
   })
