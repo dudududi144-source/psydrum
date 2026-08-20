@@ -10,8 +10,9 @@ import {
   defaultDrumConfig,
   createVoiceState,
 } from '../../src/psy-drum/types'
+import type { DrumRole } from '../../src/psy-drum/types'
 
-const CANONICAL = [
+const CANONICAL: DrumRole[] = [
   'kick',
   'snare',
   'clap',

@@ -38,7 +38,7 @@ function countingParam(value: number): RecParam {
 }
 
 interface RecGain { gain: RecParam }
-interface RecSource { buffer: unknown }
+interface RecSource { buffer: unknown; connect: () => void; disconnect: () => void; start: () => void; stop: () => void }
 
 function makeSampleDevice() {
   const gains: RecGain[] = []

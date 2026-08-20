@@ -11,7 +11,9 @@ import {
   MIN_NOTE,
   MAX_NOTE,
 } from '../../src/psy-drum/note-router'
+import type { DrumRole } from '../../src/psy-drum/types'
 import type { RouteContext } from '../../src/psy-drum/note-router'
+import type { DrumRole } from '../../src/psy-drum/types'
 import type { NoteEvent } from '../../src/psy-foundation-shim/protocol'
 
 function ctx(nowSec = 1.0): RouteContext {
@@ -36,7 +38,7 @@ function ev(overrides: Partial<NoteEvent> = {}): NoteEvent {
 
 describe('routing table', () => {
   it('DEFAULT_ROUTING_TABLE reaches every canonical role under its own name', () => {
-    const roles = [
+    const roles: DrumRole[] = [
       'kick',
       'snare',
       'clap',

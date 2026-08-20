@@ -88,8 +88,8 @@ function makeDevice(kitPatches?: Partial<Record<DrumRole, DrumPatch>>, noteMap?:
     ctx: ctx as unknown as BaseAudioContext,
     outputNode: output as unknown as AudioNode,
     optsSeed: 9,
-    kitPatches: kitPatches,
-    noteMap: noteMap,
+    ...(kitPatches !== undefined ? { kitPatches } : {}),
+    ...(noteMap !== undefined ? { noteMap } : {}),
   })
   device.onStart()
   function trigger(note: number, channel: string, velocity: number) {

@@ -14,7 +14,8 @@ import {
   loadKitManifest,
   applySampleFallback,
 } from '../../src/psy-drum/kit-library'
-import type { DrumPatch, KitDefinition } from '../../src/psy-drum/kit-library'
+import type { KitDefinition } from '../../src/psy-drum/kit-library'
+import type { DrumPatch } from '../../src/psy-drum/types'
 import { createCounters } from '../../src/psy-drum/counters'
 
 function goodPatch(): DrumPatch {
@@ -112,7 +113,7 @@ describe('kit definition validation', () => {
   })
 
   it('rejects a missing id', () => {
-    const k = goodKit() as Record<string, unknown>
+    const k = goodKit() as unknown as Record<string, unknown>
     delete k.id
     expect(validateKitDefinition(k).length).toBeGreaterThan(0)
   })
@@ -131,19 +132,19 @@ describe('kit definition validation', () => {
   })
 
   it('rejects a bad choke.hat', () => {
-    const k = goodKit() as Record<string, unknown>
+    const k = goodKit() as unknown as Record<string, unknown>
     k.choke = { hat: 'sometimes', crashMaxPoly: 2, rideMaxPoly: 2 }
     expect(validateKitDefinition(k).length).toBeGreaterThan(0)
   })
 
   it('rejects crashMaxPoly below 1', () => {
-    const k = goodKit() as Record<string, unknown>
+    const k = goodKit() as unknown as Record<string, unknown>
     k.choke = { hat: 'exclusive', crashMaxPoly: 0, rideMaxPoly: 2 }
     expect(validateKitDefinition(k).length).toBeGreaterThan(0)
   })
 
   it('rejects a non-boolean humanize', () => {
-    const k = goodKit() as Record<string, unknown>
+    const k = goodKit() as unknown as Record<string, unknown>
     k.humanize = 'yes'
     expect(validateKitDefinition(k).length).toBeGreaterThan(0)
   })
@@ -160,7 +161,7 @@ describe('loadKitManifest — reject at load, never at runtime', () => {
 
   it('rejects an invalid kit and bumps kitLoadErrors', () => {
     const counters = createCounters()
-    const bad = goodKit() as Record<string, unknown>
+    const bad = goodKit() as unknown as Record<string, unknown>
     delete bad.id
     const manifest = { manifestVersion: 1, seed: 1, kits: [goodKit(), bad] }
     const kits = loadKitManifest(manifest, counters)

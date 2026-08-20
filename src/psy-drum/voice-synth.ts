@@ -106,7 +106,7 @@ export function playSampleLayer(sc: SynthCtx): void {
 // ─── drive / saturation (the psy punch, patch-driven) ───────────────────────
 
 // Deterministic tanh soft-clip curve. Higher driveDb => harder clip => more bite.
-export function makeDriveCurve(driveDb: number): Float32Array {
+export function makeDriveCurve(driveDb: number): Float32Array<ArrayBuffer> {
   const n = 1024
   const curve = new Float32Array(n)
   const k = Math.max(1, Math.pow(10, driveDb / 20))

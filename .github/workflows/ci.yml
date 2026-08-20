@@ -28,6 +28,9 @@ jobs:
       - name: Docs lint
         run: bun run docs-lint
 
+      - name: Typecheck
+        run: bun run typecheck
+
   render-proof:
     runs-on: ubuntu-latest
     steps:

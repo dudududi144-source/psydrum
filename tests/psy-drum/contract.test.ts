@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'bun:test'
 import { DeviceHost } from '../../src/psy-foundation-shim/host'
 import { InMemoryChannel } from '../../src/psy-foundation-shim/protocol'
+import type { MusicalTransport } from '../../src/psy-foundation-shim/transport'
 import { createDrumDevice } from '../../src/psy-drum/index'
 import { DRUM_ROLES } from '../../src/psy-drum/types'
 import type { NoteEvent } from '../../src/psy-foundation-shim/protocol'
@@ -129,14 +130,14 @@ describe('contract: NoteEvent end-to-end via DeviceHost + InMemoryChannel', () =
   })
 })
 
-function makeTransport() {
-  const origin = { audioTime: { seconds: 0 }, beatIndex: 0, bpm: 140 }
+function makeTransport(): MusicalTransport {
+  const origin = { audioTime: 0, beatIndex: 0, bpm: 140 }
   return {
     bpm: 140,
     beat: 0,
     bar: 0,
     beatsPerBar: 4,
-    beatTime: { seconds: 0, phase: 0 },
+    beatTime: 0,
     barTime: 0,
     phase: 0,
     barPhase: 0,

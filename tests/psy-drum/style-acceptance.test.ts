@@ -89,7 +89,7 @@ function makeStyledDevice(optsSeed: number, noteMap?: Record<number, DrumRole>) 
     ctx: ctx as unknown as BaseAudioContext,
     outputNode: { ...node() } as unknown as AudioNode,
     optsSeed: optsSeed,
-    noteMap: noteMap,
+    ...(noteMap !== undefined ? { noteMap } : {}),
   })
   device.onStart()
   function trigger(note: number, channel: string, velocity: number) {

@@ -348,8 +348,9 @@ export class DrumDevice implements PsyDevice {
       // before the bookkeeping reset (previously the constant was dead code).
       var stopNow = this.ctx.currentTime
       for (var v = 0; v < this.pool.size; v++) {
-        if (this.voiceAudio[v] !== null) {
-          silenceVoiceAudio(this.voiceAudio[v], stopNow, STOP_FAST_RELEASE_MS)
+        const stopHandle = this.voiceAudio[v]
+        if (stopHandle !== null) {
+          silenceVoiceAudio(stopHandle, stopNow, STOP_FAST_RELEASE_MS)
           this.voiceAudio[v] = null
         }
       }
@@ -413,11 +414,12 @@ export class DrumDevice implements PsyDevice {
         // Audit V5: note-off realizes an audible release ramp (patch amp.releaseMs,
         // or DEFAULT_RELEASE_MS) — previously releaseMs was validated but dead and
         // note-off only touched the bookkeeping.
-        if (releasedIdx >= 0 && this.voiceAudio[releasedIdx] !== null) {
+        const relHandle = releasedIdx >= 0 ? this.voiceAudio[releasedIdx] : null
+        if (relHandle !== null) {
           var relPatch = this.patches[resolvedRole]
           var relMs = relPatch !== undefined && relPatch.amp !== undefined ? relPatch.amp.releaseMs : DEFAULT_RELEASE_MS
           relMs = Math.max(5, Math.min(300, relMs))
-          silenceVoiceAudio(this.voiceAudio[releasedIdx], this.ctx.currentTime, relMs)
+          silenceVoiceAudio(relHandle, this.ctx.currentTime, relMs)
           this.voiceAudio[releasedIdx] = null
         }
       }
@@ -456,9 +458,12 @@ export class DrumDevice implements PsyDevice {
   // V4 bug: the state machine agreed while the audio kept ringing.
   private silenceFreedVoices(pool: VoicePool, before: boolean[], now: number, rampMs: number): void {
     for (var i = 0; i < pool.size; i++) {
-      if (before[i] && !pool.voices[i].active && this.voiceAudio[i] !== null) {
-        silenceVoiceAudio(this.voiceAudio[i], now, rampMs)
-        this.voiceAudio[i] = null
+      if (before[i] && !pool.voices[i].active) {
+        const handle = this.voiceAudio[i]
+        if (handle !== null) {
+          silenceVoiceAudio(handle, now, rampMs)
+          this.voiceAudio[i] = null
+        }
       }
     }
   }
@@ -500,10 +505,13 @@ export class DrumDevice implements PsyDevice {
     var idx = allocVoice(pool, role, event.channel, now, this.counters)
     // Audit V4: steal victims get a short ramp so fast retriggers don't click.
     this.silenceFreedVoices(pool, beforeAlloc, now, STEAL_RELEASE_MS)
-    if (idx >= 0 && beforeAlloc[idx] && this.voiceAudio[idx] !== null) {
-      // The slot was reused: the evicted voice's audio is ramped out too.
-      silenceVoiceAudio(this.voiceAudio[idx], now, STEAL_RELEASE_MS)
-      this.voiceAudio[idx] = null
+    if (idx >= 0 && beforeAlloc[idx]) {
+      const reusedHandle = this.voiceAudio[idx]
+      if (reusedHandle !== null) {
+        // The slot was reused: the evicted voice's audio is ramped out too.
+        silenceVoiceAudio(reusedHandle, now, STEAL_RELEASE_MS)
+        this.voiceAudio[idx] = null
+      }
     }
     this.startVoiceAudio(role, event, pitch, when, idx)
     if (measuring) {
