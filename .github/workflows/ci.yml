@@ -27,3 +27,28 @@ jobs:
 
       - name: Docs lint
         run: bun run docs-lint
+
+  render-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install
+        run: bun install
+
+      - name: Build bundle
+        run: bun run bundle
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm install playwright@1.49.1
+          npx playwright install chromium --with-deps
+
+      - name: Render proof
+        run: node tests/browser/render-proof.mjs

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>psydrum render-proof</title></head>
+<body>
+<script type="module">
+import { createDrumDevice } from '/public/psydrum.js';
+
+// Render the device through a REAL OfflineAudioContext (Chromium's WebAudio
+// implementation) and measure the output. This is the P2 real-audio proof:
+// not mocks, not pure-DSP Float32 — the actual node graph, rendered.
+async function renderRole(note, channel, velocity) {
+  const sr = 44100;
+  const seconds = 0.6;
+  const ctx = new OfflineAudioContext(1, Math.floor(sr * seconds), sr);
+  const { device } = createDrumDevice({
+    ctx: ctx,
+    outputNode: ctx.destination,
+    optsSeed: 1,
+  });
+  device.onStart();
+  device.onEvent({ type: 'note', note: note, velocity: velocity, duration: 0.1, channel: channel, at: ctx.currentTime + 0.01 });
+  const rendered = await ctx.startRendering();
+  const data = rendered.getChannelData(0);
+  let energy = 0;
+  let peak = 0;
+  let nan = false;
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i];
+    if (Number.isNaN(v)) { nan = true; break; }
+    energy += v * v;
+    const av = Math.abs(v);
+    if (av > peak) peak = av;
+  }
+  const rms = Math.sqrt(energy / data.length);
+  return { rms, peak, nan, length: data.length };
+}
+
+async function main() {
+  const kick = await renderRole(36, 'kick', 100);
+  const snare = await renderRole(38, 'snare', 100);
+  const hat = await renderRole(42, 'hat-closed', 100);
+  return { kick, snare, hat };
+}
+
+main().then((r) => {
+  // Pass criteria (real audio, generous but real bounds):
+  //  - no NaN samples (numerical stability under real rendering)
+  //  - each drum is audibly non-silent (rms + peak thresholds)
+  const ok =
+    !r.kick.nan && !r.snare.nan && !r.hat.nan &&
+    r.kick.rms > 0.01 && r.kick.peak > 0.05 &&
+    r.snare.rms > 0.005 && r.snare.peak > 0.03 &&
+    r.hat.rms > 0.003 && r.hat.peak > 0.02;
+  window.__result = { ok, ...r };
+}).catch((e) => {
+  window.__result = { ok: false, error: String((e && e.stack) || e) };
+});
+</script>
+</body>
+</html>
