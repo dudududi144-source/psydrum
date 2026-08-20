@@ -119,8 +119,10 @@ describe('audit V4 - open hat chokes closed hat IN AUDIO', () => {
       expect(ramp.t).toBeLessThanOrEqual(0.003) // CHOKE_DURATION_MS = 2.5ms
     }
     // the noise source is hard-stopped just after the ramp
-    expect(closed.voiceSources[0].stopTimes.length).toBeGreaterThanOrEqual(1)
-    expect(closed.voiceSources[0].stopTimes[0]).toBeLessThanOrEqual(0.01)
+    expect(closed.voiceSources[0].stopTimes.length).toBeGreaterThanOrEqual(2)
+    // the voice is constructed with a scheduled stop at dur+0.05 (=0.55);
+    // the choke adds an EARLY stop right after the 2.5ms ramp.
+    expect(Math.min(...closed.voiceSources[0].stopTimes)).toBeLessThanOrEqual(0.01)
   })
 
   it('the choking open hat itself is NOT silenced', () => {
@@ -180,7 +182,8 @@ describe('audit V4 - onStop fast-releases real audio', () => {
     const ramp = rampTo(k.voiceGains[0], CHOKE_TARGET_GAIN)
     expect(ramp).not.toBeNull()
     if (ramp !== null) expect(ramp.t).toBeLessThanOrEqual(0.012) // 10ms window
-    expect(k.voiceSources[0].stopTimes.length).toBeGreaterThanOrEqual(1)
+    // early stop added by the silence pass (construction stop is at dur+0.05)
+    expect(Math.min(...k.voiceSources[0].stopTimes)).toBeLessThanOrEqual(0.016)
   })
 
   it('restart after stop works and fresh voices are not pre-silenced', () => {
