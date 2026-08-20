@@ -231,9 +231,15 @@ export class DrumDevice implements PsyDevice {
     if (this.started) return
     this.started = true
 
-    // Record base latency once (audit B9).
-    const base = (this.ctx as { baseLatency?: number }).baseLatency
-    recordBaseLatency(this.latency, base === undefined ? 0 : base)
+    // Audit P0.1: report the most accurate context output latency available.
+    // Prefer ctx.outputLatency (baseLatency + OS/hardware estimate); fall back
+    // to ctx.baseLatency where outputLatency is unsupported (some Safari
+    // versions, OfflineAudioContext), else 0. Trigger overhead is added on top
+    // once measured at the first trigger (audit B9).
+    const latCtx = this.ctx as { outputLatency?: number; baseLatency?: number }
+    const outLat = typeof latCtx.outputLatency === 'number' && Number.isFinite(latCtx.outputLatency) && latCtx.outputLatency > 0 ? latCtx.outputLatency : undefined
+    const baseLat = typeof latCtx.baseLatency === 'number' && Number.isFinite(latCtx.baseLatency) && latCtx.baseLatency > 0 ? latCtx.baseLatency : undefined
+    recordBaseLatency(this.latency, outLat !== undefined ? outLat : baseLat !== undefined ? baseLat : 0)
 
     // Allocate the voice pool + the device output subgraph.
     this.pool = createVoicePool(this.config.voices)

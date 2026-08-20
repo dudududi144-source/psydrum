@@ -1,9 +1,12 @@
 // PSYDRUM measured latency (phase 2, ARCHITECTURE.md section 5, audit B9).
 //
-// reportLatencyMs() = round(ctx.baseLatency * 1000) + triggerOverhead.
-// The trigger overhead is MEASURED ONCE at onStart — never hardcoded (the B9
-// lesson). Until measurement happens the overhead is 0, so reportLatencyMs()
-// still returns a truthful baseLatency-only figure.
+// reportLatencyMs() = round(contextOutputLatency * 1000) + triggerOverhead.
+// contextOutputLatency is chosen by the DEVICE at onStart (audit P0.1):
+// ctx.outputLatency when available (baseLatency + OS/hardware estimate),
+// falling back to ctx.baseLatency, else 0. The trigger overhead is MEASURED
+// ONCE at the first trigger — never hardcoded (the B9 lesson). Until
+// measurement happens the overhead is 0, so reportLatencyMs() still returns
+// a truthful context-only figure.
 
 export interface LatencyState {
   baseLatencyMs: number
@@ -15,8 +18,8 @@ export function createLatencyState(): LatencyState {
   return { baseLatencyMs: 0, triggerOverheadMs: 0, measured: false }
 }
 
-// ctx.baseLatency is in seconds; store whole milliseconds. A missing /
-// non-finite baseLatency (some OfflineAudioContexts) counts as 0.
+// Context output latency in seconds; store whole milliseconds. A missing /
+// non-finite / non-positive value (some OfflineAudioContexts) counts as 0.
 export function recordBaseLatency(state: LatencyState, ctxBaseLatencySec: number): void {
   var sec = Number.isFinite(ctxBaseLatencySec) && ctxBaseLatencySec > 0 ? ctxBaseLatencySec : 0
   state.baseLatencyMs = Math.round(sec * 1000)

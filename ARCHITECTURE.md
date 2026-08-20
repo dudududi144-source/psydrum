@@ -177,7 +177,7 @@ This is what makes drums feel alive rather than like a fixed sample triggered at
 - NO internal scheduler clock (audit B8 lesson: never run a second 25ms loop). All rendering is scheduled directly at event.at using Web Audio param scheduling.
 - Groove/swing is HOST-OWNED. The device renders event.at exactly; never applies its own swing or quantization.
 - Guarantee: < 2ms jitter between event.at and audible onset (the audit's timing-feel bar).
-- Latency: reportLatencyMs() = round(ctx.baseLatency*1000) + drumTriggerOverhead (measured once at onStart, not hardcoded - audit B9 lesson).
+- Latency (audit P0.1): reportLatencyMs() = round(contextOutputLatency*1000) + drumTriggerOverhead. contextOutputLatency = ctx.outputLatency when available (baseLatency + OS/hardware estimate), else ctx.baseLatency, else 0. Trigger overhead is measured once at the first trigger (audit B9), never hardcoded. Scope is explicit: this is the device-reported latency (event-at-time to graph, plus graph-to-hardware estimate). It does NOT include host-side FX after the device output. No scheduling compensation is applied: Web Audio schedules sample-accurately on the audio clock, so output latency shifts all audible sound equally and never distorts device-relative timing.
 
 ## 6. Determinism and Variance
 
