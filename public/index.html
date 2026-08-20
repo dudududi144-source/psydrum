@@ -101,6 +101,7 @@ body {
       <button class="tbtn" id="exportKitBtn">export kit</button>
       <input type="file" id="kitFileInput" accept=".json,application/json" style="display:none">
       <button class="tbtn" id="samplesBtn">samples: off</button>
+      <button class="tbtn" id="bankBtn" title="ADR-008: pre-rendered ACB engine banks (kick/snare/hats) with round-robin variants. Set before RUN.">bank: off</button>
       <button class="tbtn" id="motionRecBtn">● REC</button>
       <button class="tbtn" id="motionPlayBtn">▶ MOTION</button>
       <button class="tbtn" id="autoFillBtn">FILL: 4</button>
@@ -417,7 +418,7 @@ body {
     // reverb send (parallel): driveMakeup -> reverb -> reverbGain -> masterMix
     driveMakeup.connect(reverb); reverb.connect(reverbGain); reverbGain.connect(masterMix)
     masterMix.connect(analyser); analyser.connect(ctx.destination)
-    device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
+    device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,useBank:bankOn,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
     device.onStart()
     document.getElementById('startBtn').classList.add('on')
   })
@@ -561,6 +562,16 @@ body {
   document.getElementById('motionPlayBtn').addEventListener('click',function(){
     motionPlay=!motionPlay
     this.classList.toggle('on',motionPlay)
+  })
+
+  // ── ACB bank toggle (ADR-008): the device is built with useBank at RUN time ──
+  let bankOn=false
+  const bankBtn=document.getElementById('bankBtn')
+  bankBtn.addEventListener('click',()=>{
+    if(device){bankBtn.textContent='bank: set before RUN';return}
+    bankOn=!bankOn
+    bankBtn.textContent=bankOn?'bank: ACB':'bank: off'
+    bankBtn.classList.toggle('on',bankOn)
   })
 
   // ── samples toggle ──
