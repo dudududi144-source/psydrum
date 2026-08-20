@@ -81,6 +81,10 @@ export function normalizeEventVelocity(v: number): number {
 // stack or click (host-side budget, gentler than the 2.5ms choke ramp).
 export const STEAL_RELEASE_MS = 8
 
+// Audit V5: note-off realizes an audible release over this default window when
+// the patch has no amp.releaseMs (previously releaseMs was validated but dead).
+export const DEFAULT_RELEASE_MS = 30
+
 export interface DrumDeviceOptions {
   id?: string
   ctx: BaseAudioContext
@@ -367,7 +371,19 @@ export class DrumDevice implements PsyDevice {
     }
 
     if (decision.kind === 'note-off') {
-      if (this.pool !== null) releaseByChannel(this.pool, event.channel, this.ctx.currentTime)
+      if (this.pool !== null) {
+        var releasedIdx = releaseByChannel(this.pool, event.channel, this.ctx.currentTime)
+        // Audit V5: note-off realizes an audible release ramp (patch amp.releaseMs,
+        // or DEFAULT_RELEASE_MS) — previously releaseMs was validated but dead and
+        // note-off only touched the bookkeeping.
+        if (releasedIdx >= 0 && this.voiceAudio[releasedIdx] !== null) {
+          var relPatch = this.patches[resolvedRole]
+          var relMs = relPatch !== undefined && relPatch.amp !== undefined ? relPatch.amp.releaseMs : DEFAULT_RELEASE_MS
+          relMs = Math.max(5, Math.min(300, relMs))
+          silenceVoiceAudio(this.voiceAudio[releasedIdx], this.ctx.currentTime, relMs)
+          this.voiceAudio[releasedIdx] = null
+        }
+      }
       applyRelease(this.choke, resolvedRole)
       return
     }
@@ -462,9 +478,10 @@ export class DrumDevice implements PsyDevice {
       duration: dur,
       sample: this.samples[role] === undefined ? null : this.samples[role],
       handles: handles,
+      pitchHint: pitch,
     }
-    // `pitch` is a pitch hint for pitched drums (tom/ride); unpitched ignore it (B1).
-    void pitch
+    // Audit V6: `pitch` is the router's MIDI pitch hint — consumed by tom/ride
+    // in voice-synth; unpitched drums ignore it (B1 contract preserved).
     synthDrum(role, sc)
     if (idx >= 0 && idx < this.voiceAudio.length) {
       this.voiceAudio[idx] = handles

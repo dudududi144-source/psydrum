@@ -55,6 +55,7 @@ export interface SynthCtx {
   duration: number // seconds the voice is allowed to ring
   sample: AudioBuffer | null // optional per-drum sample layer (step H)
   handles: VoiceAudioHandle // audit V4: nodes a choke/steal/stop must silence
+  pitchHint: number | null // audit V6: MIDI note hint for pitched drums (tom/ride)
 }
 
 // Create a real AudioBuffer on the given context and fill it deterministically.
@@ -207,9 +208,22 @@ function buildNoiseVoice(sc: SynthCtx, filterType: BiquadFilterType, defaultHz: 
 }
 
 // Tonal 'ping' osc on top of a noise voice (snare body, ride ping, tom).
-function buildTone(sc: SynthCtx, defaultHz: number, wave: OscillatorType, attackMs: number, decayMs: number, peakScale: number): void {
+// ─── pitch hints (audit V6): MIDI -> Hz for pitched drums ───────────────────
+
+// Standard MIDI tuning (A4 = 440Hz). Deterministic and pure.
+export function midiToHz(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12)
+}
+
+function clampHz(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v))
+}
+
+function buildTone(sc: SynthCtx, defaultHz: number, wave: OscillatorType, attackMs: number, decayMs: number, peakScale: number, hintHz: number): void {
   const { ctx, bus, now, params, patch } = sc
-  const hz = patch.body !== undefined && patch.body.startHz > 0 ? patch.body.startHz : defaultHz
+  // Audit V6: hintHz > 0 carries the router's MIDI pitch hint (tom/ride) and
+  // wins over the kit's static tuning; unpitched callers pass 0 (B1 contract).
+  const hz = hintHz > 0 ? hintHz : patch.body !== undefined && patch.body.startHz > 0 ? patch.body.startHz : defaultHz
   const osc = ctx.createOscillator()
   osc.type = wave
   osc.frequency.value = hz
@@ -224,7 +238,7 @@ function buildTone(sc: SynthCtx, defaultHz: number, wave: OscillatorType, attack
 
 export function buildSnare(sc: SynthCtx): void {
   buildNoiseVoice(sc, 'bandpass', 1800, 1, 150, 0.9)
-  buildTone(sc, 195, 'triangle', 1, 95, 0.7)
+  buildTone(sc, 195, 'triangle', 1, 95, 0.7, 0)
 }
 
 export function buildClap(sc: SynthCtx): void {
@@ -238,17 +252,23 @@ export function buildHat(sc: SynthCtx, open: boolean): void {
 }
 
 export function buildTom(sc: SynthCtx, defaultHz: number): void {
-  buildTone(sc, defaultHz, 'sine', 1, 230, 1.0)
+  // Audit V6: the router's MIDI pitch hint tunes the tom (style criterion #5:
+  // tom fills with correct relative pitch). The hint wins over the kit's
+  // static body.startHz — per-note host tuning is the whole point.
+  const hintHz = sc.pitchHint !== null ? clampHz(midiToHz(sc.pitchHint), 70, 420) : 0
+  buildTone(sc, defaultHz, 'sine', 1, 230, 1.0, hintHz)
 }
 
 export function buildPerc(sc: SynthCtx): void {
-  buildTone(sc, 640, 'triangle', 1, 70, 0.8)
+  buildTone(sc, 640, 'triangle', 1, 70, 0.8, 0)
   buildNoiseVoice(sc, 'bandpass', 2600, 1, 40, 0.35)
 }
 
 export function buildRide(sc: SynthCtx): void {
   buildNoiseVoice(sc, 'highpass', 6000, 1, 520, 0.34)
-  buildTone(sc, 5200, 'sine', 1, 300, 0.24)
+  // Audit V6: the pitch hint tunes the ride's ping tone (wash stays metallic).
+  const pingHz = sc.pitchHint !== null ? clampHz(midiToHz(sc.pitchHint) * 16, 1500, 9000) : 0
+  buildTone(sc, 5200, 'sine', 1, 300, 0.24, pingHz)
 }
 
 export function buildCrash(sc: SynthCtx): void {
