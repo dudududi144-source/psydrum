@@ -22,6 +22,7 @@ describe('drum counters', () => {
     expect(c.chokeCount).toBe(0)
     expect(c.kitLoadErrors).toBe(0)
     expect(c.sampleFallbacks).toBe(0)
+    expect(c.velocityNormalized).toBe(0)
   })
 
   it('counters increment independently', () => {

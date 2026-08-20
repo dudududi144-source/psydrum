@@ -18,6 +18,9 @@ export interface DrumCounters {
   chokeCount: number
   kitLoadErrors: number
   sampleFallbacks: number
+  // Audit V3: note events received on the canonical 0..1 velocity scale and
+  // normalized to the 0..127 DSP scale at the device boundary.
+  velocityNormalized: number
 }
 
 // The three drop reasons surfaced by the note-router (ARCHITECTURE.md 3.3).
@@ -36,6 +39,7 @@ export function createCounters(): DrumCounters {
     chokeCount: 0,
     kitLoadErrors: 0,
     sampleFallbacks: 0,
+    velocityNormalized: 0,
   }
 }
 
@@ -50,6 +54,7 @@ export function resetCounters(counters: DrumCounters): void {
   counters.chokeCount = 0
   counters.kitLoadErrors = 0
   counters.sampleFallbacks = 0
+  counters.velocityNormalized = 0
 }
 
 // In-place increment — zero allocation. Called from the audio hot path.
@@ -78,5 +83,6 @@ export function snapshotCounters(counters: DrumCounters): DrumCounters {
     chokeCount: counters.chokeCount,
     kitLoadErrors: counters.kitLoadErrors,
     sampleFallbacks: counters.sampleFallbacks,
+    velocityNormalized: counters.velocityNormalized,
   }
 }

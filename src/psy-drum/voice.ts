@@ -178,3 +178,21 @@ export function resolveDrumParams(
 
   return { gain: gain, cutoff: cutoff, pitchDepth: pitchDepth, noiseBrightness: noiseBrightness }
 }
+
+// --- Noise filter centre resolution (audit V1) ---------------------------------
+
+// Resolve the noise-filter centre frequency in Hz for a triggered voice.
+// `noiseBrightness` is the velocity-tracked centre (see velocityToNoiseBrightness),
+// expressed in Hz — NOT a 0..1 factor. Treating it as a factor pinned every
+// noise filter to the Nyquist guard and muted the entire noise family
+// (hats / cymbals / snare wires). When the patch has no noise block
+// (noiseBrightness === 0) fall back to a darker fraction of the base colour.
+// Clamped into [40, nyquistGuard] so the biquad stays well-conditioned.
+export function resolveNoiseFilterHz(
+  noiseBrightness: number,
+  baseHz: number,
+  nyquistGuard: number,
+): number {
+  const target = noiseBrightness > 0 ? noiseBrightness : baseHz * 0.6
+  return Math.max(40, Math.min(target, nyquistGuard))
+}

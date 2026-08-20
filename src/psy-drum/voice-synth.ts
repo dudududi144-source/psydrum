@@ -7,6 +7,7 @@
 // only realize HOW a role sounds for a patch + resolved params.
 
 import type { DrumPatch, DrumRole } from './types'
+import { resolveNoiseFilterHz } from './voice'
 import type { ResolvedDrumParams } from './voice'
 
 export interface SynthCtx {
@@ -149,7 +150,10 @@ function buildNoiseVoice(sc: SynthCtx, filterType: BiquadFilterType, defaultHz: 
   const baseHz = patch.noise !== undefined && patch.noise.bpHz > 0 ? patch.noise.bpHz : defaultHz
   const f = ctx.createBiquadFilter()
   f.type = filterType
-  f.frequency.value = Math.min(baseHz * (0.6 + params.noiseBrightness * 0.8), ctx.sampleRate / 2 - 100)
+  // Audit V1 fix: params.noiseBrightness is a velocity-tracked centre in Hz
+  // (voice.ts section 4.3); the old formula treated it as a 0..1 factor and
+  // pinned every noise filter to the Nyquist guard, muting hats/cymbals.
+  f.frequency.value = resolveNoiseFilterHz(params.noiseBrightness, baseHz, ctx.sampleRate / 2 - 100)
   if (filterType === 'bandpass') f.Q.value = patch.noise !== undefined ? Math.max(0.4, patch.noise.mix) : 0.9
 
   const g = envGain(ctx, now, sc.params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)

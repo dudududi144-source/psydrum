@@ -67,6 +67,15 @@ import type { SynthCtx } from './voice-synth'
 // Suspend-safety: voices fast-release over this window on onStop (section 4.5).
 export const STOP_FAST_RELEASE_MS = 10
 
+// Audit V3: canonical NoteEvent.velocity is 0..1 (ARCHITECTURE.md section 3.1),
+// but legacy hosts (and the bundled demo) emit raw MIDI 0..127. The DSP curves
+// are calibrated to 0..127, so normalize at the device boundary: values <= 1
+// are treated as normalized 0..1 and scaled; values > 1 pass through as MIDI.
+// v = 1 maps to full velocity 127 (the compliant-host reading).
+export function normalizeEventVelocity(v: number): number {
+  return v <= 1 ? v * 127 : v
+}
+
 export interface DrumDeviceOptions {
   id?: string
   ctx: BaseAudioContext
@@ -377,7 +386,13 @@ export class DrumDevice implements PsyDevice {
     if (this.noiseBuffer === null) return
 
     var patch = this.patches[role]
-    var params = resolveDrumParams(patch === undefined ? {} : patch, event.velocity, 'linear', 2, this.ctx.sampleRate / 2)
+    // Audit V3: normalize canonical 0..1 velocity onto the 0..127 DSP scale
+    // (legacy MIDI-scale events pass through unchanged).
+    var vel = normalizeEventVelocity(event.velocity)
+    if (vel !== event.velocity) {
+      this.counters.velocityNormalized = this.counters.velocityNormalized + 1
+    }
+    var params = resolveDrumParams(patch === undefined ? {} : patch, vel, 'linear', 2, this.ctx.sampleRate / 2)
 
     // Per-role ring window; the per-drum envelopes shape the actual decay.
     var dur = role === 'crash' || role === 'ride' ? 0.9 : role === 'hat-open' ? 0.4 : 0.5
