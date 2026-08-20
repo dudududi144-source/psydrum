@@ -145,8 +145,9 @@ perc) fall through to realtime synthesis. The bank is rebuilt on loadKit.
 Default stays `useBank: false` until host/demo adoption.
 
 **Consequences**:
-- Velocity-to-timbre on pre-rendered material is gain-layered (ADR-004 known
-  limitation; true multi-layer samples or realtime engines are future work).
+- Velocity-to-timbre on pre-rendered material: layers render with per-layer
+  drive (audit M2e), so loud layers are brighter, not just louder; true
+  multi-sample kits remain future work.
 - roundRobinVariant and the variance machinery get a real home.
 - One-time load-time render cost (~24 short offline renders) on the main
   thread; the audio hot path stays allocation-free.

@@ -29,6 +29,10 @@ import {
 export const BANK_VELOCITY_LAYERS: readonly number[] = [0.4, 0.7, 1.0]
 export const BANK_VARIANTS = 2
 
+// Audit M2e: extra drive (dB) per velocity layer — louder layers render more
+// driven, so layers differ in TIMBRE too, not only gain (ADR-004 partially).
+export const LAYER_DRIVE_DB = 1.5
+
 // Banked roles: exactly the roles with ACB offline engines. clap/tom/perc are
 // NOT banked (no engines) and always use the realtime synthesis path.
 export const BANKED_ROLES: readonly DrumRole[] = ['kick', 'snare', 'hat-closed', 'hat-open']
@@ -56,20 +60,29 @@ export function pickBankLayer(velocity01: number, numLayers: number): number {
   return Math.min(numLayers - 1, idx)
 }
 
-function renderOne(role: DrumRole, patch: DrumPatch, sampleRate: number, seed: number, variant: number): Float32Array {
+function renderOne(role: DrumRole, patch: DrumPatch, sampleRate: number, seed: number, variant: number, layerIdx: number): Float32Array {
   const salt = ROLE_SALT[role] === undefined ? 0 : ROLE_SALT[role]
   const dur = ROLE_DURATION_SEC[role] === undefined ? 0.3 : ROLE_DURATION_SEC[role]
   const d = { sampleRate: sampleRate, durationSec: dur }
   const variantSeed = (seed + salt + variant * 7919) >>> 0
+  // Audit M2e: velocity layers carry TIMBRE too — louder layers render with
+  // more drive, so layers differ spectrally, not just in gain.
+  const layerDrive = layerIdx * LAYER_DRIVE_DB
   if (role === 'kick') {
-    return renderAcbKick(acbKickParamsFromPatch(patch, d), variantSeed)
+    const p = acbKickParamsFromPatch(patch, d)
+    p.driveDb = p.driveDb + layerDrive
+    return renderAcbKick(p, variantSeed)
   }
   if (role === 'snare') {
-    return renderAcbSnare(acbSnareParamsFromPatch(patch, d), variantSeed)
+    const p = acbSnareParamsFromPatch(patch, d)
+    p.driveDb = p.driveDb + layerDrive
+    return renderAcbSnare(p, variantSeed)
   }
   // hats: deterministic micro-detune (+7 cents on odd variants) as the variant
   const detune = variant % 2 === 0 ? 0 : 7
-  return renderAcbHat(acbHatParamsFromPatch(patch, d, role === 'hat-open'), detune)
+  const hp = acbHatParamsFromPatch(patch, d, role === 'hat-open')
+  hp.driveDb = hp.driveDb + layerDrive
+  return renderAcbHat(hp, detune)
 }
 
 // Pure bank render: [layer][variant] Float32Arrays for every banked role.
@@ -90,7 +103,7 @@ export function renderRoleBanks(
       const gain = BANK_VELOCITY_LAYERS[li]
       const variants: Float32Array[] = []
       for (let v = 0; v < BANK_VARIANTS; v++) {
-        const samples = renderOne(role, patch, sampleRate, seed, v)
+        const samples = renderOne(role, patch, sampleRate, seed, v, li)
         for (let i = 0; i < samples.length; i++) samples[i] = samples[i] * gain
         variants.push(samples)
       }
