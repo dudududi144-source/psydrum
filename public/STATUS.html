@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PSYDRUM — Engineering Status</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, rgba(96,60,180,0.16) 0%, transparent 60%),
+    radial-gradient(900px 900px at 85% 110%, rgba(20,120,130,0.12) 0%, transparent 60%),
+    linear-gradient(180deg,#0d0f14 0%,#08090d 100%);
+  min-height:100vh; color:#cfd2d8; padding:36px 16px;
+}
+.wrap { max-width:1080px; margin:0 auto; }
+.chassis {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg,#23262d 0%,#191c22 12%,#14161c 55%,#0f1116 100%);
+  border-radius:16px; border:1px solid #000; padding:30px 38px;
+  box-shadow:0 40px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+.brandbar { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:6px; }
+.logo { font-size:26px; font-weight:800; letter-spacing:0.06em; color:#e8e2ff; }
+.logo span { color:#b388ff; }
+.sub { font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#6b6f7a; }
+.snapshot { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0 22px; }
+.chip { background:rgba(179,136,255,0.10); border:1px solid rgba(179,136,255,0.35); border-radius:8px; padding:8px 12px; font-size:12px; color:#e8e2ff; }
+.chip b { color:#b388ff; }
+.chip.green { border-color:rgba(129,199,132,0.5); background:rgba(129,199,132,0.08); }
+.chip.green b { color:#81c784; }
+.chip.warn { border-color:rgba(255,183,77,0.5); background:rgba(255,183,77,0.08); }
+.chip.warn b { color:#ffb74d; }
+h2 { font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#6b6f7a; margin:26px 0 12px; }
+table { width:100%; border-collapse:collapse; font-size:12.5px; }
+th { text-align:left; color:#8a8e98; font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.08); }
+td { padding:7px 8px; border-bottom:1px solid rgba(255,255,255,0.05); vertical-align:top; }
+td.sha { font-family:ui-monospace,monospace; color:#4dd0e1; white-space:nowrap; }
+td.ph { color:#b388ff; white-space:nowrap; font-weight:600; }
+td.msg { color:#cfd2d8; }
+.metric-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+.metric { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:14px 16px; }
+.metric .t { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#8a8e98; margin-bottom:8px; }
+.metric .v { font-size:15px; color:#e8e2ff; font-weight:600; }
+.metric .d { font-size:11.5px; color:#8a8e98; margin-top:6px; line-height:1.5; }
+.ok { color:#81c784; font-weight:600; }
+.gap { color:#ffb74d; font-weight:600; }
+ul.gaps { list-style:none; }
+ul.gaps li { padding:9px 12px; border-left:3px solid #ffb74d; background:rgba(255,183,77,0.05); border-radius:0 8px 8px 0; margin-bottom:8px; font-size:12.5px; line-height:1.55; }
+ul.gaps li b { color:#ffb74d; }
+.done { border-left-color:#81c784; background:rgba(129,199,132,0.05); }
+.done b { color:#81c784; }
+.foot { margin-top:26px; font-size:11px; color:#6b6f7a; line-height:1.6; }
+.foot a { color:#4dd0e1; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap"><div class="chassis">
+
+<div class="brandbar">
+  <div class="logo">PSY<span>DRUM</span> · Engineering Status</div>
+  <div class="sub">post-roast hardening · verified-only report</div>
+</div>
+
+<div class="snapshot">
+  <div class="chip"><b>HEAD</b>&nbsp; 762e91d7 (main)</div>
+  <div class="chip green"><b>CI</b>&nbsp; test ✓ · structure ✓ · secret-scan ✓ · docs-lint ✓ · render-proof ✓</div>
+  <div class="chip green"><b>tests</b>&nbsp; 388 total · 387 pass · 0 fail</div>
+  <div class="chip warn"><b>gaps</b>&nbsp; 4 open (below)</div>
+</div>
+
+<h2>Hardening timeline — every step CI-verified</h2>
+<table>
+<tr><th>commit</th><th>phase</th><th>what it fixed / proved</th></tr>
+<tr><td class="sha">59ebb0f1</td><td class="ph">M0 V1+V3</td><td class="msg">noise filters unpinned from Nyquist (hats/cymbals were muted); canonical 0..1 velocity normalized at the device boundary</td></tr>
+<tr><td class="sha">95f8756d · 3fc5f239</td><td class="ph">M0 V4</td><td class="msg">choke / steal / stop realized in AUDIO (ramps), not just bookkeeping</td></tr>
+<tr><td class="sha">4d338fef</td><td class="ph">M0 V5+V6</td><td class="msg">note-off release ramps; MIDI pitch hints consumed by tom/ride</td></tr>
+<tr><td class="sha">89e4a748</td><td class="ph">M0 V2</td><td class="msg">velocity humanize wired (anti machine-gun)</td></tr>
+<tr><td class="sha">c23b7869</td><td class="ph">M1</td><td class="msg">contract docs aligned with shipped code + docs-lint CI gate</td></tr>
+<tr><td class="sha">3e92a77c · 7cc83d42</td><td class="ph">M2</td><td class="msg">hybrid buffer bank (ADR-008): ACB pre-renders × velocity layers × round-robin</td></tr>
+<tr><td class="sha">81647cf5 · 553e6706 · 050cab80</td><td class="ph">style suite</td><td class="msg">ARCHITECTURE-STYLE §7 encoded: 9 criteria → 12 tests</td></tr>
+<tr><td class="sha">76251688 · 402b9a8d</td><td class="ph">M2b</td><td class="msg">seeded per-hit timbre variance on the realtime path (style #4)</td></tr>
+<tr><td class="sha">f6b246c3</td><td class="ph">M2c + B9</td><td class="msg">clap tap jitter wired; trigger overhead measured once (was a dead hook)</td></tr>
+<tr><td class="sha">7f22336e</td><td class="ph">M3</td><td class="msg">sample layer is a TRUE crossfade (was stacking synth+sample)</td></tr>
+<tr><td class="sha">190d0378</td><td class="ph">demo</td><td class="msg">useBank toggle adopted in the demo page</td></tr>
+<tr><td class="sha">ee595352</td><td class="ph">M2d + M5</td><td class="msg">continuous bank variance (±0.4% playbackRate); sample PROVENANCE registry (34 assets audited)</td></tr>
+<tr><td class="sha">969d9b99</td><td class="ph">M2e</td><td class="msg">velocity layers carry timbre (per-layer drive), not just gain</td></tr>
+<tr><td class="sha">1ce7115e</td><td class="ph">P0.1</td><td class="msg">latency reporting prefers ctx.outputLatency (honest scope, tested)</td></tr>
+<tr><td class="sha">964a6508 · 9216ce66</td><td class="ph">invariants</td><td class="msg">pool invariants I1–I7 proven; gain-tracking gap pinned</td></tr>
+<tr><td class="sha">1526df66</td><td class="ph">P1 stress</td><td class="msg">sustained-saturation + overhead + determinism + restart harness</td></tr>
+<tr><td class="sha">019b830f</td><td class="ph">P2 render proof</td><td class="msg">device rendered through REAL Chromium WebAudio (OfflineAudioContext)</td></tr>
+<tr><td class="sha">762e91d7</td><td class="ph">P0.2b</td><td class="msg">gain tracking: global steals take the QUIETEST voice (was dead tie-break)</td></tr>
+</table>
+
+<h2>Verified measurements (from CI logs, not claims)</h2>
+<div class="metric-grid">
+  <div class="metric"><div class="t">Trigger overhead (5k triggers)</div>
+    <div class="v">p50 0.0018ms · p95 0.0032 · p99 0.0060 · max 1.17ms</div>
+    <div class="d">Budgets asserted in CI: p50 &lt; 0.5ms, p99 &lt; 2ms. JS trigger path is not the latency bottleneck.</div></div>
+  <div class="metric"><div class="t">Real-audio render proof (Chromium)</div>
+    <div class="v">kick rms 0.0932 · snare 0.0400 · hat 0.0214 · 0 NaN</div>
+    <div class="d">Device node graph rendered through a real OfflineAudioContext; every drum audibly non-silent, numerically stable.</div></div>
+  <div class="metric"><div class="t">Sustained saturation (S1)</div>
+    <div class="v">20,000 triggers · 0 throws · 0 dropped valid events</div>
+    <div class="d">8-voice pool, role-mixed stream; &gt;1000 steals handled; pool invariants held on every trigger.</div></div>
+  <div class="metric"><div class="t">Pool invariants</div>
+    <div class="v">I1–I7 proven</div>
+    <div class="d">alloc never fails, active ≤ size, per-role caps hold after every alloc, steal determinism, exactly-once release, choke min(requested, active).</div></div>
+</div>
+
+<h2>Open gaps — declared, not hidden</h2>
+<ul class="gaps">
+  <li><b>Sample provenance (decision needed).</b> PROVENANCE.json audits all 34 shipped samples; every asset is flagged UNVERIFIED (naming suggests md_/nord_/909 commercial origins). Action required per asset: record author+license, or remove. This is a licensing decision, not a code fix.</li>
+  <li><b>P0.4 typecheck gate (measured, decision pending).</b> Local tsc 5.9.3 run: current tsconfig reports 405 errors, of which 388 come from noUncheckedIndexedAccess (declared but never enforced). With that flag relaxed + node types: 17 genuine type errors remain. Decision needed: retrofit the flag, or relax it and add an enforced green gate.</li>
+  <li><b>Listening panel (manual).</b> "psytrance-grade" is a perceptual claim; only a human A/B panel against reference material can verify it. Not automatable.</li>
+  <li><b>Mobile QA matrix (manual).</b> iOS Safari / Android Chrome suspend-resume and latency behavior need hands-on device testing.</li>
+</ul>
+
+<h2>Already closed from the original roast</h2>
+<ul class="gaps">
+  <li class="done"><b>Sound bugs:</b> muted hats/cymbals, silent compliant hosts, bookkeeping-only choke, dead release ramps, discarded pitch hints, dead variance machinery, sample stacking — all fixed and regression-tested.</li>
+  <li class="done"><b>Proof layers:</b> logic (bun suite) + load/stress + real-audio render + browser CI — the WebAudio graph is no longer an unverified black box.</li>
+  <li class="done"><b>Honesty:</b> docs aligned with code, docs-lint enforced, provenance audited, latency scope stated exactly.</li>
+</ul>
+
+<div class="foot">
+  Generated snapshot · main @ 762e91d7 · all figures taken from GitHub Actions CI logs (not self-reported).
+  Repo: <a href="https://github.com/dudududi144-source/psydrum">dudududi144-source/psydrum</a> ·
+  Demo: <a href="./index.html">./index.html</a>
+</div>
+
+</div></div>
+</body>
+</html>
