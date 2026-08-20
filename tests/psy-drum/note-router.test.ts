@@ -13,7 +13,6 @@ import {
 } from '../../src/psy-drum/note-router'
 import type { DrumRole } from '../../src/psy-drum/types'
 import type { RouteContext } from '../../src/psy-drum/note-router'
-import type { DrumRole } from '../../src/psy-drum/types'
 import type { NoteEvent } from '../../src/psy-foundation-shim/protocol'
 
 function ctx(nowSec = 1.0): RouteContext {
