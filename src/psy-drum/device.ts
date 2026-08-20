@@ -57,7 +57,7 @@ import {
   resetPool,
 } from './voice-pool'
 import type { VoicePool } from './voice-pool'
-import { createVarianceSource } from './variance-rules'
+import { createVarianceSource, velocityHumanize } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
@@ -459,6 +459,13 @@ export class DrumDevice implements PsyDevice {
     var vel = normalizeEventVelocity(event.velocity)
     if (vel !== event.velocity) {
       this.counters.velocityNormalized = this.counters.velocityNormalized + 1
+    }
+    // Audit V2: seeded velocity micro-humanize (variance-rules, +-3%). This is
+    // the anti-machine-gun layer: deterministic per device seed, applied AFTER
+    // normalization so both velocity scales humanize identically. Pitch mapping,
+    // choke, routing and drop policy are NEVER touched by variance.
+    if (this.config.humanize) {
+      vel = vel * velocityHumanize(this.variance.rng)
     }
     var params = resolveDrumParams(patch === undefined ? {} : patch, vel, 'linear', 2, this.ctx.sampleRate / 2)
 
