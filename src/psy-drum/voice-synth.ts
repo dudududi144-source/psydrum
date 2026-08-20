@@ -9,6 +9,41 @@
 import type { DrumPatch, DrumRole } from './types'
 import { resolveNoiseFilterHz } from './voice'
 import type { ResolvedDrumParams } from './voice'
+import { CHOKE_TARGET_GAIN } from './choke'
+
+// ─── voice audio handles (audit V4): real choke / steal / stop ramps ────────
+
+// References to the per-voice nodes a choke, steal or stop must silence.
+export interface VoiceAudioHandle {
+  gains: GainNode[]
+  sources: AudioScheduledSourceNode[]
+}
+
+// Silence a voice's audio within rampMs (audit V4): cancel the scheduled
+// envelope automation, ramp to -60dB, then stop the sources. cancelAndHoldAtTime
+// is used when available so the ramp starts from the LIVE value (no step); the
+// fallback is safe on minimal mocks and older environments.
+export function silenceVoiceAudio(handle: VoiceAudioHandle, now: number, rampMs: number): void {
+  const ramp = Math.max(0.0005, rampMs / 1000)
+  for (var i = 0; i < handle.gains.length; i++) {
+    const param = handle.gains[i].gain
+    const ext = param as unknown as { cancelAndHoldAtTime?: (t: number) => void }
+    if (typeof ext.cancelAndHoldAtTime === 'function') {
+      ext.cancelAndHoldAtTime(now)
+    } else if (typeof param.cancelScheduledValues === 'function') {
+      param.cancelScheduledValues(now)
+      param.setValueAtTime(param.value, now)
+    }
+    param.linearRampToValueAtTime(CHOKE_TARGET_GAIN, now + ramp)
+  }
+  for (var j = 0; j < handle.sources.length; j++) {
+    try {
+      handle.sources[j].stop(now + ramp + 0.005)
+    } catch {
+      // already stopped — fine
+    }
+  }
+}
 
 export interface SynthCtx {
   ctx: BaseAudioContext
@@ -19,6 +54,7 @@ export interface SynthCtx {
   patch: DrumPatch
   duration: number // seconds the voice is allowed to ring
   sample: AudioBuffer | null // optional per-drum sample layer (step H)
+  handles: VoiceAudioHandle // audit V4: nodes a choke/steal/stop must silence
 }
 
 // Create a real AudioBuffer on the given context and fill it deterministically.
@@ -59,6 +95,8 @@ export function playSampleLayer(sc: SynthCtx): void {
   g.connect(bus)
   src.start(now)
   src.stop(now + duration + 0.05)
+  sc.handles.gains.push(g)
+  sc.handles.sources.push(src)
 }
 
 // ─── drive / saturation (the psy punch, patch-driven) ───────────────────────
@@ -133,6 +171,8 @@ export function buildKick(sc: SynthCtx): void {
   lpf.frequency.value = params.cutoff
 
   const g = envGain(ctx, now, params.gain, patchAttackMs(patch, 1), patchDecayMs(patch, 215), duration)
+  sc.handles.gains.push(g)
+  sc.handles.sources.push(osc)
   osc.connect(lpf)
   lpf.connect(g)
   connectThroughDrive(ctx, g, bus, patch.driveDb === undefined ? 0 : patch.driveDb)
@@ -157,6 +197,8 @@ function buildNoiseVoice(sc: SynthCtx, filterType: BiquadFilterType, defaultHz: 
   if (filterType === 'bandpass') f.Q.value = patch.noise !== undefined ? Math.max(0.4, patch.noise.mix) : 0.9
 
   const g = envGain(ctx, now, sc.params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
+  sc.handles.gains.push(g)
+  sc.handles.sources.push(src)
   src.connect(f)
   f.connect(g)
   connectThroughDrive(ctx, g, bus, patch.driveDb === undefined ? 0 : patch.driveDb)
@@ -172,6 +214,8 @@ function buildTone(sc: SynthCtx, defaultHz: number, wave: OscillatorType, attack
   osc.type = wave
   osc.frequency.value = hz
   const g = envGain(ctx, now, params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
+  sc.handles.gains.push(g)
+  sc.handles.sources.push(osc)
   osc.connect(g)
   connectThroughDrive(ctx, g, bus, patch.driveDb === undefined ? 0 : patch.driveDb)
   osc.start(now)

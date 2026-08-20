@@ -46,6 +46,7 @@ import {
   applyChokeDecision,
   applyTrigger,
   applyRelease,
+  CHOKE_DURATION_MS,
 } from './choke'
 import type { ChokeState } from './choke'
 import {
@@ -60,9 +61,9 @@ import { createVarianceSource } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
-import { synthDrum, makeNoiseBuffer } from './voice-synth'
+import { synthDrum, makeNoiseBuffer, silenceVoiceAudio } from './voice-synth'
 import { makeReverbIR } from './fx'
-import type { SynthCtx } from './voice-synth'
+import type { SynthCtx, VoiceAudioHandle } from './voice-synth'
 
 // Suspend-safety: voices fast-release over this window on onStop (section 4.5).
 export const STOP_FAST_RELEASE_MS = 10
@@ -75,6 +76,10 @@ export const STOP_FAST_RELEASE_MS = 10
 export function normalizeEventVelocity(v: number): number {
   return v <= 1 ? v * 127 : v
 }
+
+// Audit V4: steal victims ramp out over this window so fast retriggers do not
+// stack or click (host-side budget, gentler than the 2.5ms choke ramp).
+export const STEAL_RELEASE_MS = 8
 
 export interface DrumDeviceOptions {
   id?: string
@@ -111,6 +116,9 @@ export class DrumDevice implements PsyDevice {
   private reverbBus: ConvolverNode | null
   private delaySends: Partial<Record<DrumRole, GainNode>>
   private reverbSends: Partial<Record<DrumRole, GainNode>>
+  // Audit V4: per-voice audio handles, indexed by pool slot, so choke/steal/
+  // stop can silence the ACTUAL nodes (not just the bookkeeping).
+  private voiceAudio: Array<VoiceAudioHandle | null>
 
   constructor(opts: DrumDeviceOptions) {
     this.id = opts.id === undefined ? 'psydrum' : opts.id
@@ -135,6 +143,7 @@ export class DrumDevice implements PsyDevice {
     this.reverbBus = null
     this.delaySends = {}
     this.reverbSends = {}
+    this.voiceAudio = []
   }
 
   capabilities(): DeviceCapabilities {
@@ -197,6 +206,8 @@ export class DrumDevice implements PsyDevice {
 
     // Allocate the voice pool + the device output subgraph.
     this.pool = createVoicePool(this.config.voices)
+    this.voiceAudio = new Array(this.pool.size)
+    for (var vi = 0; vi < this.pool.size; vi++) this.voiceAudio[vi] = null
     this.deviceOut = this.ctx.createGain()
     this.deviceOut.gain.value = 1
     this.deviceOut.connect(this.outputNode)
@@ -292,6 +303,15 @@ export class DrumDevice implements PsyDevice {
     // Suspend safety: fast-release all voices, then disconnect the subgraph so
     // nothing dangles off the injected outputNode.
     if (this.pool !== null) {
+      // Audit V4: ramp every active voice's AUDIO out over STOP_FAST_RELEASE_MS
+      // before the bookkeeping reset (previously the constant was dead code).
+      var stopNow = this.ctx.currentTime
+      for (var v = 0; v < this.pool.size; v++) {
+        if (this.voiceAudio[v] !== null) {
+          silenceVoiceAudio(this.voiceAudio[v], stopNow, STOP_FAST_RELEASE_MS)
+          this.voiceAudio[v] = null
+        }
+      }
       resetPool(this.pool)
       this.pool = null
     }
@@ -356,30 +376,62 @@ export class DrumDevice implements PsyDevice {
     this.triggerVoice(resolvedRole, event, decision.pitch)
   }
 
+  // Audit V4: O(n) snapshot of which pool slots are active (n = voices, small).
+  private snapshotActive(pool: VoicePool): boolean[] {
+    var out: boolean[] = []
+    for (var i = 0; i < pool.size; i++) out.push(pool.voices[i].active)
+    return out
+  }
+
+  // Audit V4: ramp out the audio of every voice whose slot was freed since
+  // `before` (choke victims, cap-steal victims). Bookkeeping-only choke was the
+  // V4 bug: the state machine agreed while the audio kept ringing.
+  private silenceFreedVoices(pool: VoicePool, before: boolean[], now: number, rampMs: number): void {
+    for (var i = 0; i < pool.size; i++) {
+      if (before[i] && !pool.voices[i].active && this.voiceAudio[i] !== null) {
+        silenceVoiceAudio(this.voiceAudio[i], now, rampMs)
+        this.voiceAudio[i] = null
+      }
+    }
+  }
+
   private triggerVoice(role: DrumRole, event: NoteEvent, pitch: number | null): void {
     if (this.pool === null) return
     var pool = this.pool
+    var now = this.ctx.currentTime
 
     // Choke: decide, apply to the pool (frees choked voices), then update the
     // choke state machine so subsequent decisions stay consistent.
+    var beforeChoke = this.snapshotActive(pool)
     var decision = decideChoke(this.choke, role, this.config.choke)
     if (decision.chokeHatClosed > 0) chokeRole(pool, 'hat-closed', decision.chokeHatClosed, this.counters)
     if (decision.chokeHatOpen > 0) chokeRole(pool, 'hat-open', decision.chokeHatOpen, this.counters)
     if (decision.chokeCrash > 0) chokeRole(pool, 'crash', decision.chokeCrash, this.counters)
     if (decision.chokeRide > 0) chokeRole(pool, 'ride', decision.chokeRide, this.counters)
+    // Audit V4: choked voices are silenced in AUDIO within CHOKE_DURATION_MS
+    // (style acceptance criteria #2 / #6), not just in the bookkeeping.
+    this.silenceFreedVoices(pool, beforeChoke, now, CHOKE_DURATION_MS)
     applyChokeDecision(this.choke, decision)
     applyTrigger(this.choke, role)
 
     // Voice start time: honour a future event.at (scheduled by a host
     // sequencer); otherwise start now.
-    var when = event.at > this.ctx.currentTime ? event.at : this.ctx.currentTime
+    var when = event.at > now ? event.at : now
 
     // allocVoice enforces the per-drum budget cap (steals oldest of the role).
-    allocVoice(pool, role, event.channel, this.ctx.currentTime, this.counters)
-    this.startVoiceAudio(role, event, pitch, when)
+    var beforeAlloc = this.snapshotActive(pool)
+    var idx = allocVoice(pool, role, event.channel, now, this.counters)
+    // Audit V4: steal victims get a short ramp so fast retriggers don't click.
+    this.silenceFreedVoices(pool, beforeAlloc, now, STEAL_RELEASE_MS)
+    if (idx >= 0 && beforeAlloc[idx] && this.voiceAudio[idx] !== null) {
+      // The slot was reused: the evicted voice's audio is ramped out too.
+      silenceVoiceAudio(this.voiceAudio[idx], now, STEAL_RELEASE_MS)
+      this.voiceAudio[idx] = null
+    }
+    this.startVoiceAudio(role, event, pitch, when, idx)
   }
 
-  private startVoiceAudio(role: DrumRole, event: NoteEvent, pitch: number | null, when: number): void {
+  private startVoiceAudio(role: DrumRole, event: NoteEvent, pitch: number | null, when: number, idx: number): void {
     if (this.deviceOut === null) return
     var bus = this.buses[role]
     if (bus === undefined) return
@@ -397,6 +449,9 @@ export class DrumDevice implements PsyDevice {
     // Per-role ring window; the per-drum envelopes shape the actual decay.
     var dur = role === 'crash' || role === 'ride' ? 0.9 : role === 'hat-open' ? 0.4 : 0.5
 
+    // Audit V4: the builders register their nodes here so choke/steal/stop can
+    // silence the ACTUAL audio, not just the bookkeeping.
+    var handles: VoiceAudioHandle = { gains: [], sources: [] }
     var sc: SynthCtx = {
       ctx: this.ctx,
       noiseBuffer: this.noiseBuffer,
@@ -406,10 +461,14 @@ export class DrumDevice implements PsyDevice {
       patch: patch === undefined ? {} : patch,
       duration: dur,
       sample: this.samples[role] === undefined ? null : this.samples[role],
+      handles: handles,
     }
     // `pitch` is a pitch hint for pitched drums (tom/ride); unpitched ignore it (B1).
     void pitch
     synthDrum(role, sc)
+    if (idx >= 0 && idx < this.voiceAudio.length) {
+      this.voiceAudio[idx] = handles
+    }
   }
 }
 
