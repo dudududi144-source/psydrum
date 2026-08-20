@@ -8,6 +8,7 @@
     "test": "bun test",
     "check": "bun run scripts/check.ts",
     "secret-scan": "bun run scripts/secret-scan.ts",
+    "docs-lint": "bun run scripts/docs-lint.ts",
     "bundle": "bun run scripts/build-bundle.ts"
   }
 }

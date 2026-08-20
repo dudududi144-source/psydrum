@@ -6,7 +6,7 @@ Target architecture for PSYDRUM as a high-quality engineering product.
 
 Host (demo/psysynth/psy-sampler) -> injects ctx + content
 DrumDevice (PsyDevice contract) -> orchestration only
-Sequencer | VoicePool | FX | SampleLayer -> domain modules
+Sequencer | VoicePool | FX | Sample loading -> domain modules
 Engines (ACB kick/snare/hat/cymbal) -> pure DSP, no I/O
 Primitives (filters, PRNG, envelopes) -> reusable building blocks
 
@@ -20,13 +20,13 @@ Rules:
 
 PsyDevice: onStart/onStop, onEvent, onContext, capabilities.
 TransportClock: shared BPM/beat/bar sync across the family.
-VoicePool: allocates/recycles voices, owns and disposes audio graphs.
+VoicePool: allocates/recycles voices (pure bookkeeping). The device owns the per-voice audio handles and silences/disposes them (audit V4).
 
 ## 3. Module Responsibilities
 
 - device.ts: orchestration, contract implementation.
 - voice-pool.ts: voice allocation/recycling.
-- fx.ts: master FX chain.
+- fx.ts: procedural reverb IR. master-fx.ts: optional host-side master chain (not wired inside the device, rule 4.5).
 - acb.ts: ACB engines (kick/snare/hat/cymbal).
 - filters.ts: SVF, Moog, one-pole.
 - transport.ts: TransportClock.
@@ -47,7 +47,7 @@ VoicePool: allocates/recycles voices, owns and disposes audio graphs.
 
 ## 6. Roadmap to Production
 
-1. Stabilize - fix all known bugs.
+1. Stabilize - fix all known bugs (done: M0 hotfixes V1-V6, audited + regression-tested).
 2. Extract - move demo-only features into the library.
 3. Integrate - wire TransportClock + Context Sharing with psysynth.
 4. Polish - velocity layers, round-robin samples, commercial sound.

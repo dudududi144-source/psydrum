@@ -24,3 +24,6 @@ jobs:
 
       - name: Secret scan
         run: bun run secret-scan
+
+      - name: Docs lint
+        run: bun run docs-lint

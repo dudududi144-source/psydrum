@@ -34,21 +34,39 @@ Hard rules inherited from the family:
       host.ts                       DeviceHost + InMemoryChannel
     src/psy-drum/
       index.ts                      createDrumDevice(opts) factory -> { device, load, dispose }
+      demo-entry.ts                 bundle entry for the demo page (demo-facing exports)
       types.ts                      DrumPatch, DrumRole, DrumConfig, VoiceState, ChokeGroup
-      device.ts                     DrumDevice implements PsyDevice
+      device.ts                     DrumDevice implements PsyDevice (per-voice audio handles, audit V4)
       note-router.ts                NoteEvent -> drum voice on/off/choke decisions
-      voice.ts                      DrumVoice DSP (per-drum synthesis chains)
-      voice-pool.ts                 pooled drum voices + deterministic steal
+      voice.ts                      pure DSP math: envelopes, velocity curves, param resolution
+      voice-synth.ts                WebAudio realization of per-drum chains + sample layer + silence ramps
+      voice-pool.ts                 pooled drum voices + deterministic steal (pure bookkeeping)
       choke.ts                      choke-group state machine (open hat chokes closed, etc.)
-      kit-library.ts                kit manifest load, validation, provenance, hot-swap
-      sample-layer.ts               optional sample layer (AudioAsset) blended with synthesis
-      variance-rules.ts             seeded micro-variance (deterministic)
+      kit-library.ts                kit manifest load, validation, provenance, sample fallback
+      kit-builtin.ts                built-in kit manifest (psy-classic / dark-forest / progressive)
+      default-kit.ts                default psy kit patch data
+      presets.ts                    kit + groove preset library (WHAT data, host-owned)
+      grooves.ts                    16-step groove templates (WHAT data, host-owned)
+      sample-loader.ts              sample fetch + decode (host load-time helper)
+      variance-rules.ts             seeded micro-variance (velocity humanize wired at device, audit V2)
       midi-map.ts                   drum MIDI note map + CC <-> parameter table, MIDI-learn
-      latency.ts                    measured latency (baseLatency + trigger overhead)
+      latency.ts                    measured baseLatency (trigger-overhead hook present, not yet measured)
       counters.ts                   event/voice/steal/choke counters (observability, no logging in audio path)
-    public/kits/manifest.json       kit bank with provenance
-    public/samples/                 procedural + CC0 drum samples ONLY (no quarantined assets)
-    tests/psy-drum/                 contract / shim-sync / unit / stress / render-proof / style-acceptance
+      filters.ts                    OnePole / Biquad / SVF / Moog filter primitives (offline engines)
+      acb.ts                        ACB (SVF-based) kick/snare/hat offline render engines
+      kick-engine.ts                offline kick render engine (oversampled)
+      snare-engine.ts               offline snare render engine (oversampled)
+      hat-engine.ts                 offline hat render engine (oversampled)
+      cymbal-engine.ts              offline crash/ride render engine (oversampled)
+      kit-to-engine.ts              DrumPatch -> engine params mapping
+      fx.ts                         procedural reverb IR for the device reverb send
+      master-fx.ts                  optional host-side master chain module (NOT wired inside the device, rule 4.5)
+      transport.ts                  TransportClock (host utility; the device itself is clock-free)
+      sequencer.ts                  DOM-free step sequencer (host utility)
+      motion.ts                     per-step parameter motion recorder (host utility)
+    public/manifest.json            PWA manifest for the demo page
+    public/samples/                 demo sample assets (procedural + real; real/* licensing tracked in ROADMAP)
+    tests/psy-drum/                 contract / shim-sync / unit / engine render-proof / audit regressions
 
 ## 3. Contract Layer (event handling)
 
@@ -81,13 +99,13 @@ Rule: there is no `note ?? 60` anywhere in the device. Unpitched means unpitched
 |---|---|
 | velocity > 0, unpitched drum | voice.on(at, vel); one-shot (auto-release per drum envelope); duration ignored for gating |
 | velocity > 0, pitched drum (tom/ride) | voice.on(at, vel, pitchHint); one-shot |
-| velocity > 0, duration == -1 (hold) | for drums that support it (ride choke-hold, shaker-loop patches) sustain until note-off; others behave as one-shot |
+| velocity > 0, duration == -1 (hold) | voice rings on its envelope; note-off applies the patch release ramp (audit V5). Duration-based gating is not implemented |
 | velocity == 0 | find active voice for (channel) -> voice.off(at) (matters mostly for choke/hold drums) |
 | channel unknown | DROP + increment unknownChannel counter. Never coerce, never guess. |
 | at < ctx.currentTime - 50ms | DROP as stale + increment staleDrop counter (family stale-drop policy) |
 | pitch out of 0..127 | DROP + increment invalidEvent counter |
 
-Voice matching for note-off uses an active-voice index keyed by (channel) with LRU order. Matching is O(1).
+Voice matching for note-off scans the pool linearly by channel (O(n), n = voices <= 16); the oldest unreleased match wins (releaseByChannel).
 
 ### 3.4 Choke groups (drum-specific HOW)
 
@@ -108,7 +126,7 @@ Stores the snapshot. Used ONLY for: (a) phase-sync of tempo-locked drum LFOs (e.
 
 ### 3.6 onContext
 
-Stores key/rootPc/scale/energy/style/section. Used for: kit-bank selection by style (style=DARK-PSY => darkpsy kit), energy macro mapping (energy raises hat density metadata, drive). NEVER used to change timing. This is LIVE and tested (unlike the sampler where onContext is dead - audit finding).
+Stores a key/rootPc/scale/energy/style/section snapshot. The device itself does NOT act on it: kit selection by style is a HOST decision (the host picks a kit from a manifest and calls loadKit), and energy macros are host-side. Context never changes timing. (M1 correction: earlier revisions overclaimed kit-bank selection here.)
 
 ## 4. Audio Engine
 
@@ -130,7 +148,7 @@ Each drum is a small DSP chain, all deterministic, all zero-allocation on trigge
 
 ### 4.2 Sample layer (optional, per drum)
 
-Each drum can blend an AudioAsset sample under its synthesized body: sampleGain 0..1 crossfades sample vs synthesis. Samples are procedural or CC0 only, loaded via the kit manifest with provenance enforced at load (never at runtime). If a sample fails to load, the drum falls back to synthesis-only + counter (never silent, never throws).
+Each drum can blend a sample under its synthesized body: patch.sample.gain 0..1 sets the sample level. Samples are fetched/decoded at host load time (sample-loader.ts), attached via device.setSample / enableSampleLayer, and played by voice-synth.playSampleLayer. Samples are procedural or CC0 only; kit-manifest provenance is enforced at load (never at runtime). If a sample fails to load, the drum falls back to synthesis-only + sampleFallbacks counter (never silent, never throws). Known gap: sample and synthesis currently STACK rather than true crossfade (roadmap).
 
 ### 4.3 Velocity-to-timbre
 
@@ -141,10 +159,10 @@ This is what makes drums feel alive rather than like a fixed sample triggered at
 
 ### 4.4 VoicePool
 
-- Preallocated at onStart, size = capabilities().voices (default 16). Host may override (maxVoices) when running alongside sampler+synth.
+- Preallocated at onStart, size = capabilities().voices (default 16). Host may override via config.voices when running alongside sampler+synth.
 - Allocation: free voice first; else deterministic steal: oldest-released -> lowest-current-gain -> oldest-on. Steal increments counter.
 - Hot path (on/off/choke/steal) performs ZERO heap allocations. Voices reset in place.
-- Per-drum budget caps (config): kick 2, snare 2, clap 2, hat 4, tom 3, perc 4, ride 2 (global pool shared; caps prevent one drum from starving the kit).
+- Per-drum budget caps (DEFAULT_ROLE_CAPS in types.ts): kick 2, snare 2, clap 2, hat-closed 4, hat-open 4, tom 3, perc 4, ride 2, crash 2 (global pool shared; caps prevent one drum from starving the kit).
 
 ### 4.5 Audio graph rules
 
@@ -218,25 +236,25 @@ Default CC table: per-drum tune/decay/level macros. Learn flow mirrors psysynth:
 | Audit finding | psysynth response | psysynth drum design response |
 |---|---|---|
 | B1 midi??60 coercion | explicit per-role unpitched handling | UNPITCHED drums IGNORE note for pitch; no pitch-ratio ever; static-analysis test forbids null-coalesce pitch fallback |
-| B2 duration ignored | duration drives gate/release | duration drives gate for hold-drums (ride/shaker-loop); documented as one-shot-ignored for the rest |
+| B2 duration ignored | duration drives gate/release | note-off drives a real release ramp (audit V5); duration-based gating documented as not implemented |
 | B3 NoteEvent in 2 places | single verbatim shim | single verbatim shim; sync test fails on drift |
 | B4 step dropped | n/a in HOW | documented WHAT-layer concern |
 | B5 unsafe role cast | validated against SynthRole enum | channel validated against canonical DrumRole enum; unknown => drop+count |
 | B6 musical constants in HOW | zero composition constants | zero pattern/phrase constants; groove content stays in host |
 | B7 duplicate plan caches | n/a (stateless) | n/a (stateless) |
 | B8 dual schedulers | no device clock | no device clock |
-| B9 latency mismatch | measured latency | measured latency; capabilities() reads same source as reportLatencyMs() |
+| B9 latency mismatch | measured latency | measured baseLatency; capabilities() reads same source as reportLatencyMs() (trigger-overhead measurement: roadmap hook) |
 | B10 role taxonomy mismatch | canonical SynthRole enum | canonical DrumRole enum in types.ts; capabilities advertises EXACTLY it (hat-closed/hat-open, NOT hat) |
 | B11 duplicated at | single at in NoteEvent | single at; no opts duplication |
 | B12 transport cached twice | one transport snapshot | device holds ONE transport snapshot; host owns its own |
 
 ## 11. Observability (no logs in audio path)
 
-counters.ts exposes: eventsReceived, eventsDropped{reason}, voicesOn, voicesStolen, unknownChannel, staleDrop, invalidEvent, chokeCount, kitLoadErrors, sampleFallbacks. Readable via device.getDiagnostics() (main thread only). Hosts may ignore.
+counters.ts exposes: eventsReceived, eventsDropped{reason}, voicesOn, voicesStolen, unknownChannel, staleDrop, invalidEvent, chokeCount, kitLoadErrors, sampleFallbacks, velocityNormalized. Readable via device.getCounters() (live object, main thread only) or snapshotCounters() for a copy. Hosts may ignore.
 
 ## 12. Build and Bundle
 
-- bun workspace like psysynth/psy-sampler. Build: bun run scripts/build-bundle.ts -> public/psydrum.js (ESM, single file, no external runtime deps, target es2020).
-- Bundle exports: createDrumDevice, DrumDevice, DRUM_ROLES, types. No globals.
+- bun workspace like psysynth/psy-sampler. Build: bun run bundle -> public/psydrum.js (ESM, single file, no external runtime deps, target es2020). Entry: src/psy-drum/demo-entry.ts (demo-facing exports).
+- Bundle exports (demo-entry.ts): createDrumDevice, DrumDevice, loadKitManifest, BUILTIN_KIT_MANIFEST, groove/preset data, the offline render engines, TransportClock, StepSequencer, MotionRecorder, loadSample/loadSampleMap. The library barrel (index.ts) exports the full module API. No globals.
 - Size budget: < 40KB minified (psysynth precedent: 20.5KB; drums add sample-layer + choke).
 - Samples are NOT in the bundle; they are fetched assets with provenance. Bundle is deterministic without them.

@@ -120,7 +120,12 @@ The drums do NOT own delay/reverb/ducking. Conventions with the host:
 - Live play (MIDI pads): no quantization in device; host decides.
 - Determinism: same (seed, kit, event stream, sampleRate) => identical render (bit-compared in OfflineAudioContext).
 
-## 6. Kit Schema (public/kits/manifest.json)
+## 6. Kit Schema (KitManifest — src/psy-drum/kit-library.ts)
+
+Kit manifests follow the KitManifest type and are validated by loadKitManifest.
+Built-in kits ship inside the module (BUILTIN_KIT_MANIFEST in src/psy-drum/kit-builtin.ts);
+hosts may load external manifests at load time, and the demo can export the built-in
+manifest as JSON. There is no public/kits directory in the repo (M1 correction).
 
     {
       "manifestVersion": 1,

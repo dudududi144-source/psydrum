@@ -22,11 +22,11 @@ How to connect the PSY Drum Device to any PSY family host (PSY4, PSY6, or future
     bun run scripts/build-bundle.ts
     # -> public/psydrum.js (ESM, single file)
 
-## Step 2 - Copy bundle, kits, and samples to host
+## Step 2 - Copy bundle and samples to host
 
     cp psydrum/public/psydrum.js   host/public/
-    cp -r psydrum/public/kits      host/public/
-    cp -r psydrum/public/samples   host/public/   # procedural/CC0 only
+    # kits ship INSIDE the bundle (BUILTIN_KIT_MANIFEST) — no kits directory to copy
+    cp -r psydrum/public/samples   host/public/   # only samples with clean provenance
 
 ## Step 3 - Create DrumBridge in the host
 
@@ -83,23 +83,24 @@ Bridge rules (do not violate):
     composer.attachDrumBridge(bridge)   // host-side seam (like attachSamplerBridge/attachSynthBridge)
 
     const drumModule = await import('/psydrum.js')
-    const bundle = drumModule.createDrumDevice({
-      audioContext: engine.audioContext,      // SHARED - never create your own
+    const { device } = drumModule.createDrumDevice({
+      ctx: engine.audioContext,               // SHARED - never create your own
       outputNode: engine.engineBusInput,      // SHARED master bus
-      kitManifestUrl: '/kits/manifest.json',
-      seed: 1,
-      delaySendNode: engine.delaySend ?? null,    // optional
-      reverbSendNode: engine.reverbSend ?? null,  // optional
-      maxVoices: 16,                          // budget negotiation when coexisting with sampler+synth
+      optsSeed: 1,
+      // optional: config (DrumConfig), kitPatches, noteMap
     })
-    bridge.host.register(bundle.device)
-    bundle.device.onStart?.()
-    await bundle.load()
+    // Kit choice is a HOST decision (style/energy): pick from a manifest and
+    // loadKit. The device never selects kits by itself.
+    const manifest = drumModule.BUILTIN_KIT_MANIFEST
+    const kit = manifest.kits.find((k) => k.style === contextStyle) ?? manifest.kits[0]
+    device.loadKit(kit)
+    bridge.host.register(device)
+    device.onStart()
 
 ## Step 5 - Feed transport and context
 
 - On every tempo/beat update: bridge.publishTransport(snapshot).
-- On style/section change: bridge.host.pushContext({ key, rootPc, scale, energy, style, section, beatsPerBar }) - the device switches kit banks accordingly.
+- On style/section change: bridge.host.pushContext({ key, rootPc, scale, energy, style, section, beatsPerBar }) - the HOST switches kits accordingly via device.loadKit (the device stores the context snapshot but never selects kits by itself).
 
 ## MIDI Pad Wiring (host side)
 
@@ -121,7 +122,7 @@ Bridge rules (do not violate):
 
 ## Voice Budget Negotiation
 
-Declare per-host budgets at creation: createDrumDevice({ ..., maxVoices: 12 }) when running alongside sampler + synth on the same bus. Default 16. The pool hard-caps at this value; steals are deterministic and counted.
+Declare per-host budgets at creation via the config: createDrumDevice({ ..., config: { ...defaultDrumConfig(), voices: 12 } }) when running alongside sampler + synth on the same bus. Default 16 (defaultDrumConfig). The pool hard-caps at this value; steals are deterministic and counted.
 
 ## Kick-onset sidechain hook (optional)
 
