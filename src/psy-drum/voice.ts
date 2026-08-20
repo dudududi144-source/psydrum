@@ -196,3 +196,21 @@ export function resolveNoiseFilterHz(
   const target = noiseBrightness > 0 ? noiseBrightness : baseHz * 0.6
   return Math.max(40, Math.min(target, nyquistGuard))
 }
+
+// ─── Envelope level estimation (audit P0.2b: gain tracking for steals) ─────
+
+// Estimate the current envelope level (0..1) `elapsedSec` after the trigger,
+// for a linear attack followed by envGain's exponential ramp to 0.001 over the
+// decay: v(t) = 0.001^(t/d) — the exact WebAudio exponentialRamp shape. Pure
+// and deterministic. The device uses it to refresh pool gain estimates before
+// every alloc so GLOBAL steals take the QUIETEST voice (approximate current
+// loudness), not whatever the dead constant-gain tie-break produced.
+export function estimateEnvelopeLevel(elapsedSec: number, attackMs: number, decayMs: number): number {
+  if (!(elapsedSec > 0)) return 0
+  const a = Math.max(0.0005, attackMs / 1000)
+  if (elapsedSec < a) return elapsedSec / a
+  const d = Math.max(0.02, decayMs / 1000)
+  const t = elapsedSec - a
+  if (t >= d) return 0.001
+  return Math.pow(0.001, t / d)
+}

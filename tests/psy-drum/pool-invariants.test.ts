@@ -158,11 +158,11 @@ describe('I7 - chokeRole frees exactly min(requested, active)', () => {
 
 describe('P1 - PINNED KNOWN GAP: pool gain is never updated post-alloc', () => {
   it('VoiceState.gain stays 1 (the "lowest current gain" tie-break is dead)', () => {
-    // The documented steal order (released -> lowest gain -> oldest onset)
-    // relies on VoiceState.gain, but the device never writes envelope levels
-    // back into the pool (they live in WebAudio). So gain is always 1 and the
-    // tie-break degenerates to onset order. PINNED here as current truth; the
-    // roadmap (gain tracking) must replace this test when it lands.
+    // allocVoice initializes gain to 1 — that stays true at the POOL level.
+    // Audit P0.2b added gain tracking at the DEVICE level: before every alloc
+    // the device refreshes each active voice's gain from its patch envelope
+    // estimate, so global steals prefer the quietest voice (proof lives in
+    // audit-gain-tracking.test.ts). This pin keeps the pool-level contract.
     const pool = createVoicePool(4)
     const counters = createCounters()
     for (let i = 0; i < 4; i++) allocVoice(pool, 'perc', 'perc', i, counters)

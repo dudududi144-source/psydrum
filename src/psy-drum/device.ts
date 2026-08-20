@@ -59,7 +59,7 @@ import {
 import type { VoicePool } from './voice-pool'
 import { createVarianceSource, velocityHumanize, roundRobinVariant, timbreVariance, clapTapJitter } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
-import { resolveDrumParams } from './voice'
+import { resolveDrumParams, estimateEnvelopeLevel } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
 import { synthDrum, makeNoiseBuffer, silenceVoiceAudio } from './voice-synth'
 import { buildAudioBank, pickBankLayer } from './voice-bank'
@@ -429,6 +429,21 @@ export class DrumDevice implements PsyDevice {
     this.triggerVoice(resolvedRole, event, decision.pitch)
   }
 
+  // Audit P0.2b (gain tracking): refresh each active voice's pool gain from
+  // its patch envelope estimate so global steals prefer the QUIETEST voice.
+  // Cap-steals and chokes stay onset-ordered by design; only the global
+  // steal path (pickStealVictim) consumes these estimates.
+  private refreshGainEstimates(pool: VoicePool, now: number): void {
+    for (var i = 0; i < pool.size; i++) {
+      const voice = pool.voices[i]
+      if (!voice.active || voice.role === null) continue
+      const patch = this.patches[voice.role]
+      const attackMs = patch !== undefined && patch.amp !== undefined ? patch.amp.attackMs : 1
+      const decayMs = patch !== undefined && patch.amp !== undefined ? patch.amp.decayMs : 200
+      voice.gain = estimateEnvelopeLevel(now - voice.onsetAt, attackMs, decayMs)
+    }
+  }
+
   // Audit V4: O(n) snapshot of which pool slots are active (n = voices, small).
   private snapshotActive(pool: VoicePool): boolean[] {
     var out: boolean[] = []
@@ -475,6 +490,10 @@ export class DrumDevice implements PsyDevice {
     // Voice start time: honour a future event.at (scheduled by a host
     // sequencer); otherwise start now.
     var when = event.at > now ? event.at : now
+
+    // Audit P0.2b: refresh gain estimates BEFORE allocation so any global
+    // steal sees approximate current loudness (quietest-first).
+    this.refreshGainEstimates(pool, now)
 
     // allocVoice enforces the per-drum budget cap (steals oldest of the role).
     var beforeAlloc = this.snapshotActive(pool)
