@@ -1,0 +1,178 @@
+{
+  "audit": "Sample provenance registry (M5). ARCHITECTURE.md mandates procedural or CC0-with-provenance assets only. This file is an AUDIT, not a license: every asset below must be confirmed or removed before the samples can be treated as cleared for redistribution.",
+  "policy": "procedural or CC0-with-provenance only; quarantined/unlicensed assets must not ship",
+  "demoUsage": "public/index.html REAL_SAMPLE_MAP streams public/samples/real/{nord_kick_deep_68, nord_snare_Snare1, md_clap_Claps_0000, md_hat_Hats_0008, md_hat_Hats_0013, md_perc_Percs_0000}.wav when the samples toggle is on; ACB banks / realtime synthesis cover everything else.",
+  "assets": [
+    {
+      "path": "public/samples/clap.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/clap_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/crash_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/hat-closed.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/hat-open.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/hat.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/hat_closed.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/hat_closed_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/hat_open.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/hat_open_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/kick-909.wav",
+      "status": "unverified",
+      "notes": "naming suggests a Roland TR-909 capture; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/kick.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/kick_909.wav",
+      "status": "unverified",
+      "notes": "naming suggests a Roland TR-909 capture; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/kick_deep.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/kick_punchy.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/perc.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/perc_1.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/perc_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/ride.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/ride_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/shaker.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/snare.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/snare_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/tom.wav",
+      "status": "unverified",
+      "notes": "origin not recorded in the repository history"
+    },
+    {
+      "path": "public/samples/tom_md.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/909_BD_02.wav",
+      "status": "unverified",
+      "notes": "naming suggests a Roland TR-909 capture; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/md_clap_Claps_0000.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/md_hat_Hats_0008.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/md_hat_Hats_0013.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/md_kick_Kicks_0000.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/md_perc_Percs_0000.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/md_snare_Snares_0000.wav",
+      "status": "unverified",
+      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/nord_kick_deep_68.wav",
+      "status": "unverified",
+      "notes": "naming suggests Nord Drum content; license confirmation required before redistribution"
+    },
+    {
+      "path": "public/samples/real/nord_snare_Snare1.wav",
+      "status": "unverified",
+      "notes": "naming suggests Nord Drum content; license confirmation required before redistribution"
+    }
+  ],
+  "actionRequired": "for each asset: record author + license (CC0/public-domain/procedural), or delete the file and its demo reference"
+}

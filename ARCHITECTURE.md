@@ -66,7 +66,8 @@ Hard rules inherited from the family:
       sequencer.ts                  DOM-free step sequencer (host utility)
       motion.ts                     per-step parameter motion recorder (host utility)
     public/manifest.json            PWA manifest for the demo page
-    public/samples/                 demo sample assets (procedural + real; real/* licensing tracked in ROADMAP)
+    public/samples/                 demo sample assets — provenance audit: public/samples/PROVENANCE.json (all assets currently UNVERIFIED)
+    public/samples/PROVENANCE.json  sample provenance registry (audit M5; action required per asset)
     tests/psy-drum/                 contract / shim-sync / unit / engine render-proof / audit regressions
 
 ## 3. Contract Layer (event handling)

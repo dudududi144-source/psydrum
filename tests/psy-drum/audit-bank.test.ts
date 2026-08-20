@@ -157,7 +157,7 @@ function makeBankDevice(useBank: boolean) {
     createBufferSource: () => {
       const s: RecSource = { stopTimes: [] }
       sources.push(s)
-      return { ...node(), buffer: null, start: () => {}, stop: (t: number) => { s.stopTimes.push(t) } }
+      return { ...node(), buffer: null, playbackRate: countingParam(1), start: () => {}, stop: (t: number) => { s.stopTimes.push(t) } }
     },
     createWaveShaper: () => ({ ...node(), curve: null, oversample: 'none' }),
     createDelay: () => ({ ...node(), delayTime: countingParam(0.28) }),

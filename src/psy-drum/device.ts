@@ -94,6 +94,10 @@ export const TIMBRE_VARIANCE_DEPTH = 0.02
 // wander within +-this value around their 12/24ms slots.
 export const CLAP_JITTER_MS = 1.5
 
+// Audit M2d: continuous per-hit variance depth for bank playback — a subtle
+// seeded playbackRate shift on top of the discrete round-robin variants.
+export const BANK_PLAYBACK_RATE_DEPTH = 0.004
+
 export interface DrumDeviceOptions {
   id?: string
   ctx: BaseAudioContext
@@ -500,6 +504,12 @@ export class DrumDevice implements PsyDevice {
 
     var src = this.ctx.createBufferSource()
     src.buffer = variant
+    // Audit M2d: subtle seeded playbackRate variance (+-0.4%) — bank voices are
+    // pre-rendered, so this is the continuous anti-machine-gun layer on top of
+    // the discrete round-robin variants. Humanize-gated like the rest.
+    if (this.config.humanize) {
+      src.playbackRate.value = timbreVariance(this.variance.rng, BANK_PLAYBACK_RATE_DEPTH)
+    }
     var g = this.ctx.createGain()
     var attackMs = patch !== undefined && patch.amp !== undefined ? patch.amp.attackMs : 1
     var decayMs = patch !== undefined && patch.amp !== undefined ? patch.amp.decayMs : 200
