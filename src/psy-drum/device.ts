@@ -36,7 +36,7 @@ import { DRUM_ROLES, defaultDrumConfig, isDrumRole } from './types'
 import type { KitDefinition } from './kit-library'
 import { createCounters } from './counters'
 import type { DrumCounters } from './counters'
-import { createLatencyState, recordBaseLatency, reportLatencyMs } from './latency'
+import { createLatencyState, recordBaseLatency, recordTriggerOverhead, reportLatencyMs } from './latency'
 import type { LatencyState } from './latency'
 import { routeNoteEvent } from './note-router'
 import type { RouteContext } from './note-router'
@@ -57,7 +57,7 @@ import {
   resetPool,
 } from './voice-pool'
 import type { VoicePool } from './voice-pool'
-import { createVarianceSource, velocityHumanize, roundRobinVariant, timbreVariance } from './variance-rules'
+import { createVarianceSource, velocityHumanize, roundRobinVariant, timbreVariance, clapTapJitter } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
@@ -89,6 +89,10 @@ export const DEFAULT_RELEASE_MS = 30
 // Audit M2b: per-hit timbre variance depth for the realtime path (seeded,
 // deterministic). Brightness varies hit-to-hit; pitch and routing never do.
 export const TIMBRE_VARIANCE_DEPTH = 0.02
+
+// Audit M2c: clap tap jitter depth in ms (seeded, deterministic). Taps 2/3
+// wander within +-this value around their 12/24ms slots.
+export const CLAP_JITTER_MS = 1.5
 
 export interface DrumDeviceOptions {
   id?: string
@@ -439,6 +443,11 @@ export class DrumDevice implements PsyDevice {
     var pool = this.pool
     var now = this.ctx.currentTime
 
+    // Audit B9: measure the first trigger's overhead exactly once (measured,
+    // never hardcoded). capabilities()/reportLatencyMs read the same source.
+    var measuring = !this.latency.measured && typeof performance !== 'undefined' && typeof performance.now === 'function'
+    var t0 = measuring ? performance.now() : 0
+
     // Choke: decide, apply to the pool (frees choked voices), then update the
     // choke state machine so subsequent decisions stay consistent.
     var beforeChoke = this.snapshotActive(pool)
@@ -468,6 +477,9 @@ export class DrumDevice implements PsyDevice {
       this.voiceAudio[idx] = null
     }
     this.startVoiceAudio(role, event, pitch, when, idx)
+    if (measuring) {
+      recordTriggerOverhead(this.latency, performance.now() - t0)
+    }
   }
 
   // Audit M2 (ADR-008): realize a voice from the pre-rendered bank. Returns
@@ -532,6 +544,17 @@ export class DrumDevice implements PsyDevice {
     if (this.config.humanize) {
       timbre = timbreVariance(this.variance.rng, TIMBRE_VARIANCE_DEPTH)
     }
+    // Audit M2c: seeded clap tap jitter — taps 2/3 wander +-CLAP_JITTER_MS
+    // around their 12/24ms slots; tap 1 stays the timing reference. Drawn
+    // last, so the per-trigger seeded draw order is fixed for every role.
+    var clapTaps: Array<number> | null = null
+    if (role === 'clap' && this.config.humanize) {
+      var j1 = clapTapJitter(this.variance.rng, CLAP_JITTER_MS)
+      var j2 = clapTapJitter(this.variance.rng, CLAP_JITTER_MS)
+      var tap2 = Math.max(8, Math.min(16, 12 + j1))
+      var tap3 = Math.max(tap2 + 4, Math.min(30, 24 + j2))
+      clapTaps = [0, tap2, tap3]
+    }
     // Audit M2 (ADR-008): banked roles play pre-rendered ACB buffers; the
     // humanized velocity picks the layer, the RR counter picks the variant
     // (anti machine-gun). Non-banked roles fall through to synthesis.
@@ -564,6 +587,7 @@ export class DrumDevice implements PsyDevice {
       handles: handles,
       pitchHint: pitch,
       timbre: timbre,
+      clapTaps: clapTaps,
     }
     // Audit V6: `pitch` is the router's MIDI pitch hint — consumed by tom/ride
     // in voice-synth; unpitched drums ignore it (B1 contract preserved).

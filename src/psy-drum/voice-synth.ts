@@ -57,6 +57,7 @@ export interface SynthCtx {
   handles: VoiceAudioHandle // audit V4: nodes a choke/steal/stop must silence
   pitchHint: number | null // audit V6: MIDI note hint for pitched drums (tom/ride)
   timbre: number // audit M2b: per-hit seeded brightness multiplier (~1 +- 2%)
+  clapTaps: Array<number> | null // audit M2c: seeded clap tap offsets in ms (null = fixed 0/12/24)
 }
 
 // Create a real AudioBuffer on the given context and fill it deterministically.
@@ -245,10 +246,15 @@ export function buildSnare(sc: SynthCtx): void {
   buildTone(sc, 195, 'triangle', 1, 95, 0.7, 0)
 }
 
+// Fixed clap tap offsets (ms): the classic 3-tap burst. Tap 1 is the timing
+// reference; taps 2/3 may be jittered by the device (audit M2c).
+export const DEFAULT_CLAP_TAPS_MS: readonly number[] = [0, 12, 24]
+
 export function buildClap(sc: SynthCtx): void {
-  buildNoiseVoice(sc, 'bandpass', 1150, 1, 55, 0.8)
-  buildNoiseVoice(sc, 'bandpass', 1500, 12, 70, 0.6)
-  buildNoiseVoice(sc, 'bandpass', 950, 24, 90, 0.5)
+  const taps = sc.clapTaps !== null && sc.clapTaps.length === 3 ? sc.clapTaps : DEFAULT_CLAP_TAPS_MS
+  buildNoiseVoice(sc, 'bandpass', 1150, taps[0], 55, 0.8)
+  buildNoiseVoice(sc, 'bandpass', 1500, taps[1], 70, 0.6)
+  buildNoiseVoice(sc, 'bandpass', 950, taps[2], 90, 0.5)
 }
 
 export function buildHat(sc: SynthCtx, open: boolean): void {

@@ -49,9 +49,9 @@ Hard rules inherited from the family:
       presets.ts                    kit + groove preset library (WHAT data, host-owned)
       grooves.ts                    16-step groove templates (WHAT data, host-owned)
       sample-loader.ts              sample fetch + decode (host load-time helper)
-      variance-rules.ts             seeded micro-variance (velocity humanize + per-hit timbre variance wired at device, audits V2/M2b)
+      variance-rules.ts             seeded micro-variance, all wired at device: velocity humanize (V2), timbre (M2b), clap tap jitter (M2c), round-robin via voice-bank (M2)
       midi-map.ts                   drum MIDI note map + CC <-> parameter table, MIDI-learn
-      latency.ts                    measured baseLatency (trigger-overhead hook present, not yet measured)
+      latency.ts                    measured latency: baseLatency + first-trigger overhead measured once (audit B9 wired)
       counters.ts                   event/voice/steal/choke counters (observability, no logging in audio path)
       filters.ts                    OnePole / Biquad / SVF / Moog filter primitives (offline engines)
       acb.ts                        ACB (SVF-based) kick/snare/hat offline render engines
