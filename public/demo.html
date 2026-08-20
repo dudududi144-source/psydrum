@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#12141a" />
+<title>PSYDRUM Pro — Psytrance Drum Machine</title>
+<meta name="theme-color" content="#12141a" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" href="./icon.svg" type="image/svg+xml" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2312141a'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23b388ff' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23b388ff'/%3E%3C/svg%3E" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, rgba(96,60,180,0.16) 0%, transparent 60%),
+    radial-gradient(900px 500px at 85% 110%, rgba(20,120,130,0.12) 0%, transparent 60%),
+    linear-gradient(180deg,#0d0f14 0%,#08090d 100%);
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:36px 16px;
+}
+.chassis {
+  position:relative; width:min(1180px,100%);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg,#23262d 0%,#191c22 12%,#14161c 55%,#0f1116 100%);
+  border-radius:16px; border:1px solid #000; padding:26px 48px 28px;
+  box-shadow:0 40px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04) inset,0 2px 0 rgba(255,255,255,0.05) inset,0 -3px 0 rgba(0,0,0,0.6) inset;
+}
+.cheek { position:absolute; top:-7px; bottom:-7px; width:34px; border-radius:11px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 6px),
+    linear-gradient(90deg,#4d3117,#7a4f28 28%,#5d3c1c 72%,#3d2611);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,0.18),inset 0 -5px 10px rgba(0,0,0,0.55),0 14px 30px rgba(0,0,0,0.6); }
+.cheek.l { left:-40px; } .cheek.r { right:-40px; }
+.screw { position:absolute; width:15px; height:15px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#99a1ab,#3a3f46 70%,#22262b);
+  box-shadow:0 1px 2px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.25); }
+.screw.tl{top:10px;left:12px;} .screw.tr{top:10px;right:12px;} .screw.bl{bottom:10px;left:12px;} .screw.br{bottom:10px;right:12px;}
+.brandbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.brand { display:flex; align-items:baseline; gap:12px; }
+.brand .logo { font-size:24px; font-weight:800; letter-spacing:0.06em; color:#e8e2ff; }
+.brand .logo span { color:#b388ff; }
+.brand .sub { font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#6b6f7a; }
+.transport { display:flex; gap:10px; align-items:center; }
+.tbtn { padding:9px 16px; border-radius:8px; border:1px solid #000; cursor:pointer; font-weight:700; font-size:13px;
+  background:linear-gradient(180deg,#2c3038,#1b1e24); color:#cfd2d8;
+  box-shadow:0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
+.tbtn.primary { background:linear-gradient(180deg,#7c4dff,#5a2fd0); color:#fff; border-color:#3a1f8a; }
+.tbtn.on { box-shadow:0 0 12px rgba(179,136,255,0.6), inset 0 1px 0 rgba(255,255,255,0.12); }
+.tsel { background:#14161c; color:#cfd2d8; border:1px solid #000; border-radius:8px; padding:8px 10px; font-size:12px; }
+.section { margin-top:18px; }
+.section .stitle { font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#6b6f7a; margin-bottom:10px; }
+/* knob */
+.kwrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.kzone { position:relative; cursor:ns-resize; }
+.kzone svg { display:block; }
+.kcap { position:absolute; left:50%; top:50%; width:54%; height:54%; transform:translate(-50%,-50%) rotate(var(--rot,0deg));
+  border-radius:50%; background:radial-gradient(circle at 32% 26%,#565d66 0%,#2b2f36 46%,#1a1d22 78%,#101216 100%);
+  box-shadow:0 4px 9px rgba(0,0,0,0.7),inset 0 1px 1px rgba(255,255,255,0.18),inset 0 -3px 6px rgba(0,0,0,0.6); }
+.kptr { position:absolute; left:50%; top:7%; width:3px; height:32%; transform:translateX(-50%); background:var(--c,#b388ff); border-radius:2px; box-shadow:0 0 7px var(--c,#b388ff); }
+.klabel { font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:#8a8e98; }
+.kval { font-size:10px; color:#b388ff; font-weight:700; }
+.krow { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+/* sequencer grid */
+.seqgrid { display:flex; flex-direction:column; gap:5px; }
+.seqrow { display:grid; grid-template-columns:64px repeat(16,1fr); gap:4px; align-items:center; }
+.rlabel { font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:#8a8e98; text-align:right; padding-right:8px; }
+.step { height:26px; border-radius:4px; cursor:pointer; border:1px solid #000;
+  background:linear-gradient(180deg,#20242b,#161920);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.4); }
+.step:nth-child(4n+2) { background:linear-gradient(180deg,#262b33,#1a1e26); }
+.step.on { background:linear-gradient(180deg,var(--drum-color,#b388ff),color-mix(in srgb,var(--drum-color,#b388ff) 70%,black)); border-color:color-mix(in srgb,var(--drum-color,#b388ff) 60%,black); box-shadow:0 0 8px color-mix(in srgb,var(--drum-color,#b388ff) 50%,transparent), inset 0 1px 0 rgba(255,255,255,0.2); }
+.step.ph { box-shadow:0 0 0 2px rgba(255,255,255,0.7) inset; }
+.mixrow { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.mixcell { display:flex; flex-direction:column; align-items:center; gap:3px; width:56px; }
+.mixcell .mlabel { font-size:9px; letter-spacing:0.05em; text-transform:uppercase; color:#8a8e98; }
+
+  /* Phase C (C3.2/C3.3): visual feedback glow while a knob is being changed */
+  .knob.knob-active svg{filter:drop-shadow(0 0 6px currentColor)}
+  .knob.knob-active .klabel{color:#fff}
+</style>
+</head>
+<body>
+<div class="chassis">
+  <div class="cheek l"></div><div class="cheek r"></div>
+  <div class="screw tl"></div><div class="screw tr"></div><div class="screw bl"></div><div class="screw br"></div>
+
+  <div class="brandbar">
+    <div class="brand">
+      <div class="logo">PSY<span>DRUM</span></div>
+      <div class="sub">Psytrance Drum Machine · Pro</div>
+    </div>
+    <div class="transport">
+      <button class="tbtn primary" id="startBtn">▶ RUN</button>
+      <button class="tbtn" id="seqPlayBtn">⏵ SEQ</button>
+      <span id="posDisplay" style="font-size:11px;color:#6b6f7a;min-width:80px;">bar 1 · step 1</span>
+      <select class="tsel" id="grooveSelect"></select>
+      <select class="tsel" id="kitSelect"></select>
+      <button class="tbtn" id="loadKitBtn">load kit</button>
+      <button class="tbtn" id="exportKitBtn">export kit</button>
+      <input type="file" id="kitFileInput" accept=".json,application/json" style="display:none">
+      <button class="tbtn" id="samplesBtn">samples: off</button>
+      <button class="tbtn" id="bankBtn" title="ADR-008: pre-rendered ACB engine banks (kick/snare/hats) with round-robin variants. Set before RUN.">bank: off</button>
+      <button class="tbtn" id="motionRecBtn">● REC</button>
+      <button class="tbtn" id="motionPlayBtn">▶ MOTION</button>
+      <button class="tbtn" id="autoFillBtn">FILL: 4</button>
+      <button class="tbtn" id="varBtn">VAR: A</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="stitle">Kit Browser · search & filter</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="kitSearch" type="text" placeholder="search kits..." style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px 10px;color:#e8e2ff;font-size:12px;width:180px;">
+      <select id="kitStyleFilter" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:6px;color:#e8e2ff;font-size:12px;">
+        <option value="">all styles</option>
+      </select>
+      <div id="kitResults" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="stitle">Step Sequencer · 16 steps</div>
+    <div class="seqgrid" id="seq"></div>
+  </div>
+
+  <div class="section">
+    <div class="stitle">Master · Tempo & Feel</div>
+    <div id="paramDisplay" style="font-size:11px;color:#8a8f9a;margin-bottom:8px;min-height:14px;"></div>
+    <div class="krow" id="masterKnobs"></div>
+  </div>
+
+  <div class="section">
+    <div class="stitle">Mixer · Per-Drum Level / Delay / Reverb</div>
+    <div class="mixrow" id="mixer"></div>
+  </div>
+
+  <div class="section">
+    <div class="stitle">3D Spectrum</div>
+    <canvas id="viz3d" width="1080" height="260" style="width:100%;border-radius:10px;background:linear-gradient(180deg,#0a0c10,#05060a);border:1px solid #000;box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="stitle">Song Mode · Chain grooves into a song</div>
+    <div class="row" style="gap:8px;">
+      <select class="tsel" id="songAddSelect"></select>
+      <button class="tbtn" id="songAddBtn">+ add</button>
+      <button class="tbtn" id="songClearBtn">clear</button>
+      <button class="tbtn" id="songPlayBtn">⏵ play song</button>
+    </div>
+    <div id="songChain" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="stitle">Song Editor · structure overview</div>
+    <div id="songEditor" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { createDrumDevice, BUILTIN_KIT_MANIFEST, loadKitManifest, GROOVE_TEMPLATES, parsePattern, KIT_PRESETS, GROOVE_PRESETS, findGroovePreset, renderKickEngine, renderAcbKick, acbKickParamsFromPatch, renderAcbSnare, TransportClock, renderAcbHat, acbSnareParamsFromPatch, acbHatParamsFromPatch, renderSnareEngine, renderHatEngine, renderCymbalEngine, kickParamsFromPatch, snareParamsFromPatch, hatParamsFromPatch, cymbalParamsFromPatch } from './psydrum.js'
+
+  // Phase C (C2.2): unique color per drum for the pattern view
+  const DRUM_COLORS=['#b388ff','#ff7043','#4dd0e1','#81c784','#ffb74d','#f48fb1','#a1887f','#90a4ae','#fff176']
+  const DRUMS = [
+    ['KICK',36,'kick'], ['SNARE',38,'snare'], ['CLAP',39,'clap'],
+    ['HAT-C',42,'hat-closed'], ['HAT-O',46,'hat-open'], ['TOM',45,'tom'],
+    ['CRASH',49,'crash'], ['RIDE',51,'ride'], ['PERC',56,'perc'],
+  ]
+  const STEPS = 16
+  const pattern = DRUMS.map(() => new Array(STEPS).fill(false))
+  // Phase B (B1.4): per-step trigger probability (1.0 = always). right-click a step to cycle 100%->75%->50%->25%.
+  const stepProb = DRUMS.map(() => new Array(STEPS).fill(1.0))
+  // Phase B (B1.5): per-step 'follow kick' conditional trigger (alt+click)
+  const followKick = DRUMS.map(() => new Array(STEPS).fill(false))
+  let prevStepTriggeredKick=false
+
+  // Real drum samples (commercial-quality, from psy5) mapped per channel.
+  const REAL_SAMPLES = {
+    'kick': './samples/real/909_BD_02.wav',
+    'snare': './samples/real/md_snare_Snares_0000.wav',
+    'clap': './samples/real/md_clap_Claps_0000.wav',
+    'hat-closed': './samples/real/md_hat_Hats_0008.wav',
+    'hat-open': './samples/real/md_hat_Hats_0013.wav',
+    'perc': './samples/real/md_perc_Percs_0000.wav',
+  }
+  const realBuffers = {}   // channel -> AudioBuffer (loaded lazily)
+  async function loadRealSample(channel){
+    if(realBuffers[channel]) return realBuffers[channel]
+    const url = REAL_SAMPLES[channel]
+    if(!url) return null
+    try{
+      const resp = await fetch(url)
+      const arr = await resp.arrayBuffer()
+      const buf = await ctx.decodeAudioData(arr)
+      realBuffers[channel] = buf
+      return buf
+    }catch(e){ return null }
+  }
+  // per-step retrigger/roll count (1-4), shift+click to cycle (market-leader ratcheting)
+  const retrigger = DRUMS.map(() => new Array(STEPS).fill(1))
+
+  let ctx=null, device=null, masterReverbGain=null, masterComp=null
+  // Phase D (D1): shared transport clock (BPM owner) for PSY-family sync
+  const transport=new TransportClock()
+  let bpm=138, swing=0
+  let seqPlaying=false, seqStep=0, seqNextTime=0, seqTimer=null
+  // Phase C (C2.3): drag-paint state for multi-step editing
+  let paintMode=null
+  let playheadCells=[]
+
+  // ── SVG knob (port of PsySynthPro's Knob) ──
+  function polarPt(cx,cy,r,a){const rad=a*Math.PI/180;return{x:cx+r*Math.sin(rad),y:cy-r*Math.cos(rad)}}
+  function arcPath(cx,cy,r,a0,a1){const s=polarPt(cx,cy,r,a0),e=polarPt(cx,cy,r,a1);const large=(a1-a0)>180?1:0;
+    return 'M '+s.x.toFixed(2)+' '+s.y.toFixed(2)+' A '+r+' '+r+' 0 '+large+' 1 '+e.x.toFixed(2)+' '+e.y.toFixed(2)}
+  class Knob {
+    constructor(host,cfg){
+      this.cfg=cfg; this.min=cfg.min; this.max=cfg.max
+      this.value=cfg.value!==undefined?cfg.value:cfg.def
+      this.onChange=cfg.onChange||(()=>{})
+      this.size=cfg.size||56
+      this.el=document.createElement('div'); this.el.className='kwrap'; host.appendChild(this.el)
+      this.build(); this.bind(); this.render()
+    }
+    build(){
+      const s=this.size, NS='http://www.w3.org/2000/svg'
+      this.zone=document.createElement('div'); this.zone.className='kzone'
+      this.zone.style.width=s+'px'; this.zone.style.height=s+'px'
+      const svg=document.createElementNS(NS,'svg'); svg.setAttribute('viewBox','0 0 100 100'); svg.setAttribute('width',s); svg.setAttribute('height',s)
+      const ticks=document.createElementNS(NS,'g')
+      for(let i=0;i<11;i++){const a=-135+(270*i)/10;const p1=polarPt(50,50,47,a),p2=polarPt(50,50,42,a)
+        const ln=document.createElementNS(NS,'line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y)
+        ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke','#3a3f46');ln.setAttribute('stroke-width','2');ticks.appendChild(ln)}
+      svg.appendChild(ticks)
+      this.valueArc=document.createElementNS(NS,'path'); this.valueArc.setAttribute('fill','none')
+      this.valueArc.setAttribute('stroke', this.cfg.color||'#b388ff'); this.valueArc.setAttribute('stroke-width','4'); this.valueArc.setAttribute('stroke-linecap','round')
+      svg.appendChild(this.valueArc)
+      this.zone.appendChild(svg)
+      this.cap=document.createElement('div'); this.cap.className='kcap'
+      this.ptr=document.createElement('div'); this.ptr.className='kptr'; this.ptr.style.setProperty('--c', this.cfg.color||'#b388ff')
+      this.cap.appendChild(this.ptr); this.zone.appendChild(this.cap)
+      this.el.appendChild(this.zone)
+      const lab=document.createElement('div'); lab.className='klabel'; lab.textContent=this.cfg.label; this.el.appendChild(lab)
+      this.valEl=document.createElement('div'); this.valEl.className='kval'; this.el.appendChild(this.valEl)
+    }
+    norm(){return (this.value-this.min)/(this.max-this.min)}
+    bind(){
+      const self=this; let dragging=false,startY=0,startV=0
+      this.zone.addEventListener('pointerdown',e=>{dragging=true;startY=e.clientY;startV=self.value;try{self.zone.setPointerCapture(e.pointerId)}catch(err){}})
+      const move=e=>{if(!dragging)return
+        const dy=startY-e.clientY; const span=self.max-self.min
+        self.set(startV+dy/150*span,false)}
+      const up=()=>{dragging=false}
+      this.zone.addEventListener('pointermove',move)
+      this.zone.addEventListener('pointerup',up)
+      window.addEventListener('pointermove',move)
+      window.addEventListener('pointerup',up)
+      window.addEventListener('pointerup',()=>{paintMode=null})
+      this.zone.addEventListener('wheel',e=>{e.preventDefault();const span=self.max-self.min
+        self.set(self.value+(e.deltaY<0?1:-1)*span/50,true)},{passive:false})
+      this.zone.addEventListener('dblclick',()=>{self.set(self.cfg.def!==undefined?self.cfg.def:self.min,true)})
+    }
+    set(v,silent){
+      this.value=Math.min(this.max,Math.max(this.min,v)); this.render()
+      if(!silent) this.onChange(this.value)
+      // Phase C (C3.2/C3.3): brief visual feedback on change
+      if(this.zone){this.zone.classList.add('knob-active');clearTimeout(this._fbT);this._fbT=setTimeout(()=>{this.zone.classList.remove('knob-active')},250)}
+    }
+    render(){
+      const p=this.norm(); const a1=-135+270*p
+      if(a1<=-133) this.valueArc.setAttribute('d','')
+      else this.valueArc.setAttribute('d',arcPath(50,50,34,-135,a1))
+      this.cap.style.setProperty('--rot',(-135+270*p)+'deg')
+      this.valEl.textContent=this.cfg.fmt?this.cfg.fmt(this.value):String(Math.round(this.value))
+    }
+  }
+
+  // ── sequencer grid ──
+  const seqEl=document.getElementById('seq')
+  function buildSeq(){
+    seqEl.innerHTML=''; playheadCells=[]
+    for(let r=0;r<DRUMS.length;r++){
+      const row=document.createElement('div'); row.className='seqrow'
+      const lab=document.createElement('div'); lab.className='rlabel'; lab.textContent=DRUMS[r][0]; row.appendChild(lab)
+      playheadCells.push([])
+      for(let s=0;s<STEPS;s++){
+        const cell=document.createElement('div'); cell.className='step'+(pattern[r][s]?' on':'')
+        cell.style.setProperty('--drum-color',DRUM_COLORS[r%DRUM_COLORS.length])
+        cell.addEventListener('pointerdown',(e)=>{
+          if(e.shiftKey){
+            retrigger[r][s]=(retrigger[r][s]%4)+1
+            cell.textContent=retrigger[r][s]>1?String(retrigger[r][s]):''
+          }else{
+            pattern[r][s]=!pattern[r][s]
+            paintMode=pattern[r][s]
+            cell.classList.toggle('on',pattern[r][s])
+          }
+        })
+        cell.addEventListener('pointerover',(e)=>{
+          // Phase C (C2.3): drag-paint while the primary button is held
+          if(paintMode===null)return
+          if(e.buttons&1){
+            pattern[r][s]=paintMode
+            cell.classList.toggle('on',pattern[r][s])
+          }
+        })
+        cell.addEventListener('contextmenu',(e)=>{
+          e.preventDefault()
+          // Phase B (B1.4): cycle trigger probability 100 -> 75 -> 50 -> 25 -> 100
+          const cur=stepProb[r][s]
+          stepProb[r][s] = cur>=1.0 ? 0.75 : cur>=0.75 ? 0.5 : cur>=0.5 ? 0.25 : 1.0
+          cell.style.opacity = pattern[r][s] ? String(0.35+0.65*stepProb[r][s]) : ''
+        })
+        cell.addEventListener('dblclick',(e)=>{
+          // Phase B (B1.5): toggle 'follow kick' conditional
+          followKick[r][s]=!followKick[r][s]
+          cell.style.outline = followKick[r][s] ? '2px solid #ff7043' : ''
+        })
+        row.appendChild(cell); playheadCells[r].push(cell)
+      }
+      seqEl.appendChild(row)
+    }
+  }
+  let barCounter=1
+  function setPlayhead(step){
+    for(let r=0;r<DRUMS.length;r++) for(let s=0;s<STEPS;s++) playheadCells[r][s].classList.toggle('ph', s===step)
+    // Phase C (C2.4): live bar/step position display
+    if(step===0)barCounter++
+    const pd=document.getElementById('posDisplay')
+    if(pd)pd.textContent='bar '+barCounter+' · step '+(step+1)
+  }
+  function refreshGrid(){
+    const rows=seqEl.querySelectorAll('.seqrow')
+    rows.forEach((row,r)=>{row.querySelectorAll('.step').forEach((cell,s)=>cell.classList.toggle('on',pattern[r][s]))})
+  }
+
+  // ── lookahead sequencer ──
+  function secondsPerStep(){return 60/bpm/4}
+  function scheduleStep(step,when){
+    // Phase B (B3.2): during a fill bar, add escalating snare hits at the end
+    if(fillActive && step>=12){
+      const snareNote=38
+      device.onEvent({type:'note',note:snareNote,velocity:112+ (step-12)*5,duration:0.1,channel:'snare',at:when})
+    }
+    let thisStepKick=false
+    for(let r=0;r<DRUMS.length;r++) if(pattern[r][step]){
+      // Phase B (B1.5): follow-kick conditional gate
+      if(followKick[r][step] && !prevStepTriggeredKick) continue
+      // Phase B (B1.4): probability gate
+      if(Math.random() > stepProb[r][step]) continue
+      if(DRUMS[r][2]==='kick') thisStepKick=true
+      const[,note,channel]=DRUMS[r]
+      const rt=retrigger[r][step]
+      const stepDur=secondsPerStep()
+      for(let i=0;i<rt;i++){
+        const hitTime=when+(i*stepDur/rt)
+        device.onEvent({type:'note',note,velocity:112,duration:0.1,channel,at:hitTime})
+      }
+    }
+    // Phase B (B3.2): track bars; mark the bar just before a fill boundary
+    if(step===0){
+      barCount++
+      fillActive = (autoFillEvery>0) && (barCount % autoFillEvery === autoFillEvery-1)
+    }
+    // Phase B (B2): record/playback motion automation per step
+    if(motionRec){motionDrive[step]=liveDrive;motionReverb[step]=liveReverb}
+    applyMotionStep(step)
+    prevStepTriggeredKick=thisStepKick
+    const delayMs=Math.max(0,(when-ctx.currentTime)*1000)
+    setTimeout(()=>setPlayhead(step),delayMs)
+  }
+  function scheduleAhead(){
+    while(seqNextTime<ctx.currentTime+0.12){
+      const sw=(seqStep%2===1)?(swing/100)*secondsPerStep()*0.5:0
+      scheduleStep(seqStep,seqNextTime+sw)
+      if(window.__songTick)window.__songTick()
+      seqNextTime+=secondsPerStep(); seqStep=(seqStep+1)%STEPS
+    }
+  }
+  function startSeq(){if(!device||!ctx||seqPlaying)return
+    seqPlaying=true;seqStep=0;seqNextTime=ctx.currentTime+0.06;seqTimer=setInterval(scheduleAhead,25)
+    document.getElementById('seqPlayBtn').classList.add('on')}
+  function stopSeq(){seqPlaying=false;if(seqTimer)clearInterval(seqTimer);seqTimer=null;setPlayhead(-1)
+    document.getElementById('seqPlayBtn').classList.remove('on')}
+
+  // ── start audio + device ──
+  let analyser=null
+  let drivePreGain=null
+  document.getElementById('startBtn').addEventListener('click',async()=>{
+    if(device)return
+    ctx=new AudioContext(); await ctx.resume()
+    const output=ctx.createGain(); output.gain.value=0.85
+    // performance macro: global drive stage (PsySynthPro-style macro)
+    drivePreGain=ctx.createGain(); drivePreGain.gain.value=1
+    const driveShaper=ctx.createWaveShaper()
+    const dc=new Float32Array(1024)
+    for(let i=0;i<1024;i++){const x=(i/1023)*2-1;dc[i]=Math.tanh(x*2)/Math.tanh(2)}
+    driveShaper.curve=dc
+    const driveMakeup=ctx.createGain(); driveMakeup.gain.value=0.85
+    analyser=ctx.createAnalyser(); analyser.fftSize=256
+    // Master FX Chain (ROADMAP A3): Compressor -> Drive -> Reverb send
+    const comp=ctx.createDynamicsCompressor()
+    comp.threshold.value=-18; comp.knee.value=12; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.15; masterComp=comp
+    // Procedural reverb IR (noise with exponential decay)
+    const irLen=Math.floor(ctx.sampleRate*1.8)
+    const ir=ctx.createBuffer(1,irLen,ctx.sampleRate)
+    const ird=ir.getChannelData(0)
+    let irs=0x243f6a88>>>0
+    for(let i=0;i<irLen;i++){irs^=irs<<13;irs^=irs>>>17;irs^=irs<<5
+      ird[i]=(((irs>>>0)/4294967296)*2-1)*Math.pow(1-i/irLen,2.5)}
+    const reverb=ctx.createConvolver(); reverb.buffer=ir
+    const reverbGain=ctx.createGain(); reverbGain.gain.value=0.18; masterReverbGain=reverbGain
+    const masterMix=ctx.createGain(); masterMix.gain.value=1
+    // wire: output -> comp -> drive -> masterMix -> analyser -> destination
+    output.connect(comp); comp.connect(drivePreGain)
+    drivePreGain.connect(driveShaper); driveShaper.connect(driveMakeup); driveMakeup.connect(masterMix)
+    // reverb send (parallel): driveMakeup -> reverb -> reverbGain -> masterMix
+    driveMakeup.connect(reverb); reverb.connect(reverbGain); reverbGain.connect(masterMix)
+    masterMix.connect(analyser); analyser.connect(ctx.destination)
+    device=createDrumDevice({id:'psydrum-demo',ctx,outputNode:output,optsSeed:1,useBank:bankOn,kitPatches:BUILTIN_KIT_MANIFEST.kits[0].drums}).device
+    device.onStart()
+    document.getElementById('startBtn').classList.add('on')
+  })
+  document.getElementById('seqPlayBtn').addEventListener('click',()=>{seqPlaying?stopSeq():startSeq()})
+
+  // ── master knobs (bpm, swing, delay send, reverb send) ──
+  const masterKnobs=document.getElementById('masterKnobs')
+  new Knob(masterKnobs,{label:'BPM',min:90,max:160,def:138,color:'#b388ff',onChange:v=>{bpm=v;transport.setBpm(v);updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'Swing',min:0,max:60,def:0,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{swing=v;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'Drive',min:0,max:100,def:0,color:'#ff7043',fmt:v=>Math.round(v)+'%',onChange:v=>{liveDrive=v;if(drivePreGain)drivePreGain.gain.value=1+v/100*6;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'M.Reverb',min:0,max:100,def:18,color:'#4dd0e1',fmt:v=>Math.round(v)+'%',onChange:v=>{liveReverb=v;if(masterReverbGain)masterReverbGain.gain.value=v/100;updateParamDisplay()}})
+  new Knob(masterKnobs,{label:'Comp',min:0,max:100,def:50,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(masterComp)masterComp.ratio.value=1+v/100*11}})
+  new Knob(masterKnobs,{label:'Delay',min:0,max:100,def:0,color:'#ffb74d',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumDelaySend(ch,v/100)}})
+  new Knob(masterKnobs,{label:'Reverb',min:0,max:100,def:0,color:'#81c784',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)for(const[,,ch]of DRUMS)device.setDrumReverbSend(ch,v/100)}})
+
+  // ── mixer: per-drum level knob ──
+  const mixerEl=document.getElementById('mixer')
+  DRUMS.forEach(([label,note,channel])=>{
+    const cell=document.createElement('div'); cell.className='mixcell'; mixerEl.appendChild(cell)
+    new Knob(cell,{label:label,min:0,max:150,def:100,size:48,color:'#b388ff',fmt:v=>Math.round(v)+'%',onChange:v=>{if(device)device.setDrumLevel(channel,v/100)}})
+  })
+
+  // ── groove selector ──
+  const grooveSelect=document.getElementById('grooveSelect')
+  GROOVE_PRESETS.forEach((g,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=g.label;grooveSelect.appendChild(o)})
+  grooveSelect.addEventListener('change',()=>{
+    const g=GROOVE_PRESETS[Number(grooveSelect.value)]; if(!g)return
+    for(let r=0;r<DRUMS.length;r++)pattern[r].fill(false)
+    for(const[label,note,channel]of DRUMS){const pat=g.patterns[channel];if(!pat)continue
+      const ridx=DRUMS.findIndex(d=>d[2]===channel);const steps=parsePattern(pat)
+      for(let s=0;s<steps.length;s++)pattern[ridx][s]=steps[s]}
+    refreshGrid()
+  })
+
+  // ── kit selector ──
+  const kitSelect=document.getElementById('kitSelect')
+  KIT_PRESETS.forEach((k,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=k.label;kitSelect.appendChild(o)})
+  // current kit patches drive the sample loader (kit -> engine params)
+  let currentKitPatches=KIT_PRESETS[0].drums
+  function currentSampleKit(){return KIT_PRESETS[Number(kitSelect.value)]||KIT_PRESETS[0]}
+  kitSelect.addEventListener('change',()=>{
+    const k=KIT_PRESETS[Number(kitSelect.value)]
+    if(device&&k){
+      device.loadKit({id:k.id,style:k.style,humanize:true,provenance:{license:'procedural',author:'psydrum',created:'2026'},choke:{hat:'exclusive',crashMaxPoly:2,rideMaxPoly:2},drums:k.drums})
+      currentKitPatches=k.drums
+      // re-render samples with the new kit so the sound actually changes
+      if(samplesOn&&samplesLoaded){samplesLoaded=false;samplesOn=false;document.getElementById('samplesBtn').textContent='samples: off'}
+    }
+  })
+
+  // ── kit load/export ──
+  const loadKitBtn=document.getElementById('loadKitBtn'),kitFileInput=document.getElementById('kitFileInput')
+  loadKitBtn.addEventListener('click',()=>kitFileInput.click())
+  kitFileInput.addEventListener('change',async()=>{
+    const file=kitFileInput.files&&kitFileInput.files[0]; if(!file||!device)return
+    try{const text=await file.text();const parsed=JSON.parse(text)
+      const counters={kitLoadErrors:0};const kits=loadKitManifest(parsed,counters)
+      if(kits.length>0){device.loadKit(kits[0]);loadKitBtn.textContent=kits[0].id}else{loadKitBtn.textContent='invalid'}
+    }catch(e){loadKitBtn.textContent='invalid'}
+    kitFileInput.value=''
+  })
+  document.getElementById('exportKitBtn').addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(BUILTIN_KIT_MANIFEST,null,2)],{type:'application/json'})
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='psydrum-kit-manifest.json';a.click()
+    setTimeout(()=>URL.revokeObjectURL(url),2000)
+  })
+
+  // wrap a Float32Array into an AudioBuffer (for per-sample DSP renderers)
+  function bufferFromSamples(ctx,data){
+    const buf=ctx.createBuffer(1,data.length,ctx.sampleRate)
+    buf.getChannelData(0).set(data)
+    return buf
+  }
+
+  // ── Phase B (B3.3): Pattern Variations — A/B/C transformations of the pattern ──
+  let variation='A'
+  let basePattern=null
+  const varBtn=document.getElementById('varBtn')
+  function clonePattern(p){return p.map(row=>row.slice())}
+  function applyVariation(){
+    if(!basePattern)return
+    for(let r=0;r<DRUMS.length;r++){
+      const ch=DRUMS[r][2]
+      for(let s=0;s<STEPS;s++){
+        let v=basePattern[r][s]
+        if(variation==='B'){
+          // add offbeat hats
+          if(ch==='hat-closed' && s%4===2) v=true
+        }else if(variation==='C'){
+          // add extra kick on step 10, remove kick on step 7
+          if(ch==='kick' && s===10) v=true
+          if(ch==='kick' && s===7) v=false
+          // add offbeat hats
+          if(ch==='hat-closed' && s%4===2) v=true
+        }
+        pattern[r][s]=v
+      }
+    }
+    refreshGrid()
+  }
+  varBtn.addEventListener('click',()=>{
+    // capture current pattern as the base when leaving A
+    if(variation==='A') basePattern=clonePattern(pattern)
+    variation = variation==='A'?'B':variation==='B'?'C':'A'
+    if(variation==='A' && basePattern){ pattern=clonePattern(basePattern); basePattern=null; refreshGrid() }
+    else applyVariation()
+    varBtn.textContent='VAR: '+variation
+    varBtn.classList.toggle('on',variation!=='A')
+  })
+
+  // ── Phase B (B3.2): Auto-Fill — every N bars, layer a fill on the last bar ──
+  let autoFillEvery=4   // 0 = off; else fill every N bars
+  let barCount=0
+  let fillActive=false
+  const autoFillBtn=document.getElementById('autoFillBtn')
+  autoFillBtn.addEventListener('click',()=>{
+    autoFillEvery = autoFillEvery>=8 ? 0 : autoFillEvery===0 ? 2 : autoFillEvery*2
+    autoFillBtn.textContent = autoFillEvery===0 ? 'FILL: off' : 'FILL: '+autoFillEvery
+    autoFillBtn.classList.toggle('on',autoFillEvery>0)
+    barCount=0
+  })
+
+  // ── Phase B (B2): Motion Data — per-step automation of Drive & M.Reverb ──
+  const motionDrive = new Array(STEPS).fill(null)
+  const motionReverb = new Array(STEPS).fill(null)
+  let motionRec=false, motionPlay=false
+  let liveDrive=0, liveReverb=18   // current knob values (0..100)
+  function applyMotionStep(step){
+    if(motionPlay && motionDrive[step]!==null && drivePreGain){
+      drivePreGain.gain.value = 1 + (motionDrive[step]/100)*6
+    }
+    if(motionPlay && motionReverb[step]!==null && masterReverbGain){
+      masterReverbGain.gain.value = motionReverb[step]/100
+    }
+  }
+  document.getElementById('motionRecBtn').addEventListener('click',function(){
+    motionRec=!motionRec
+    this.classList.toggle('on',motionRec)
+    if(motionRec){motionDrive.fill(null);motionReverb.fill(null)}
+  })
+  document.getElementById('motionPlayBtn').addEventListener('click',function(){
+    motionPlay=!motionPlay
+    this.classList.toggle('on',motionPlay)
+  })
+
+  // ── ACB bank toggle (ADR-008): the device is built with useBank at RUN time ──
+  let bankOn=false
+  const bankBtn=document.getElementById('bankBtn')
+  bankBtn.addEventListener('click',()=>{
+    if(device){bankBtn.textContent='bank: set before RUN';return}
+    bankOn=!bankOn
+    bankBtn.textContent=bankOn?'bank: ACB':'bank: off'
+    bankBtn.classList.toggle('on',bankOn)
+  })
+
+  // ── samples toggle ──
+  let samplesOn=false,samplesLoaded=false
+  const samplesBtn=document.getElementById('samplesBtn')
+  // Clean single map: real commercial samples where available, synth fallback otherwise.
+  const REAL_SAMPLE_MAP={
+    kick:'samples/real/nord_kick_deep_68.wav',
+    snare:'samples/real/nord_snare_Snare1.wav',
+    clap:'samples/real/md_clap_Claps_0000.wav',
+    'hat-closed':'samples/real/md_hat_Hats_0008.wav',
+    'hat-open':'samples/real/md_hat_Hats_0013.wav',
+    tom:'samples/tom_md.wav',
+    perc:'samples/real/md_perc_Percs_0000.wav',
+    crash:'samples/crash_md.wav',
+    ride:'samples/ride_md.wav'
+  }
+  async function tryLoadSample(url){
+    try{
+      const resp=await fetch(url)
+      if(!resp.ok)return null
+      const ab=await resp.arrayBuffer()
+      return await ctx.decodeAudioData(ab)
+    }catch(e){return null}
+  }
+  // Synth fallback: render the real engine so there is ALWAYS sound.
+  function synthFallback(channel){
+    const D={sampleRate:ctx.sampleRate,durationSec:0.25,oversample:2}
+    const kit=currentKitPatches||{}
+    if(channel==='kick')return renderAcbKick(acbKickParamsFromPatch(kit.kick||{},D))
+    if(channel==='snare')return renderAcbSnare(acbSnareParamsFromPatch(kit.snare||{},D))
+    if(channel==='hat-closed')return renderAcbHat(acbHatParamsFromPatch(kit['hat-closed']||{},D,false))
+    if(channel==='hat-open')return renderAcbHat(acbHatParamsFromPatch(kit['hat-open']||{},D,true))
+    if(channel==='crash')return renderCymbalEngine(cymbalParamsFromPatch(kit.crash||{},D,false))
+    if(channel==='ride')return renderCymbalEngine(cymbalParamsFromPatch(kit.ride||{},D,true))
+    return null
+  }
+  async function loadAllSamples(){
+    let realCount=0
+    for(const[label,note,channel]of DRUMS){
+      let buf=null
+      const url=REAL_SAMPLE_MAP[channel]
+      if(url){buf=await tryLoadSample(url)}
+      if(buf){device.setSample(channel,buf);device.enableSampleLayer(channel,1.0);realCount++}
+      else{
+        const fb=synthFallback(channel)
+        if(fb){device.setSample(channel,bufferFromSamples(ctx,fb));device.enableSampleLayer(channel,1.0)}
+      }
+    }
+    return realCount
+  }
+  samplesBtn.addEventListener('click',async()=>{
+    if(!device||!ctx)return
+    samplesOn=!samplesOn
+    if(samplesOn&&!samplesLoaded){
+      samplesBtn.textContent='samples: loading…'
+      const n=await loadAllSamples()
+      samplesLoaded=true
+      samplesBtn.textContent='samples: on ('+n+' real)'
+      return
+    }
+    samplesBtn.textContent=samplesOn?'samples: on':'samples: off'
+  })
+  // ── song mode: chain grooves into a song ──
+  const songChain=[]
+  const songAddSelect=document.getElementById('songAddSelect')
+  GROOVE_PRESETS.forEach((g,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=g.label;songAddSelect.appendChild(o)})
+  const songChainEl=document.getElementById('songChain')
+  function renderSongChain(){
+    songChainEl.innerHTML=''
+    songChain.forEach((gi,idx)=>{
+      const chip=document.createElement('div')
+      chip.style.cssText='background:rgba(179,136,255,0.15);border:1px solid rgba(179,136,255,0.4);border-radius:6px;padding:4px 10px;font-size:11px;color:#e8e2ff;cursor:pointer;'
+      chip.textContent=(idx+1)+'. '+GROOVE_PRESETS[gi].label
+      chip.addEventListener('click',()=>{songChain.splice(idx,1);renderSongChain()})
+      songChainEl.appendChild(chip)
+    })
+  }
+  document.getElementById('songAddBtn').addEventListener('click',()=>{
+    songChain.push(Number(songAddSelect.value));renderSongChain()
+  })
+  document.getElementById('songClearBtn').addEventListener('click',()=>{
+    songChain.length=0;renderSongChain()
+  })
+  function applyGrooveToPattern(gi){
+    const g=GROOVE_PRESETS[gi];if(!g)return
+    for(let r=0;r<DRUMS.length;r++)pattern[r].fill(false)
+    for(const[label,note,channel]of DRUMS){const pat=g.patterns[channel];if(!pat)continue
+      const ridx=DRUMS.findIndex(d=>d[2]===channel);const steps=parsePattern(pat)
+      for(let s=0;s<steps.length;s++)pattern[ridx][s]=steps[s]}
+    refreshGrid()
+  }
+  let songPos=0,songStepCount=0,songPlaying=false
+  const STEPS_PER_GROOVE=32 // 2 bars per groove
+  document.getElementById('songPlayBtn').addEventListener('click',()=>{
+    if(!device||!ctx||songChain.length===0)return
+    if(songPlaying){songPlaying=false;stopSeq();document.getElementById('songPlayBtn').textContent='⏵ play song';return}
+    songPlaying=true;songPos=0;songStepCount=0
+    applyGrooveToPattern(songChain[0].groove)
+    startSeq()
+    document.getElementById('songPlayBtn').textContent='⏸ stop song'
+  })
+  // step-accurate song advance: called once per scheduled step from scheduleAhead
+  window.__songTick=function(){
+    if(!songPlaying||!seqPlaying)return
+    songStepCount++
+    // Phase B (B3.1): each song entry has its own bar count
+    const cur=songChain[songPos]
+    const stepsForEntry=(cur?cur.bars:2)*STEPS
+    if(songStepCount>=stepsForEntry){
+      songStepCount=0
+      songPos++
+      if(songPos>=songChain.length){songPos=0} // loop the song
+      applyGrooveToPattern(songChain[songPos].groove)
+    }
+  }
+
+  // ── Phase B (B3.4): Song Editor — visual structure overview ──
+  const songEditorEl=document.getElementById('songEditor')
+  function renderSongEditor(){
+    if(!songEditorEl)return
+    songEditorEl.innerHTML=''
+    if(songChain.length===0){
+      const hint=document.createElement('div')
+      hint.style.cssText='color:#6b6f7a;font-size:11px;'
+      hint.textContent='Add grooves above to build a song structure.'
+      songEditorEl.appendChild(hint)
+      return
+    }
+    songChain.forEach((entry,idx)=>{
+      const block=document.createElement('div')
+      block.style.cssText='background:rgba(77,208,225,0.12);border:1px solid rgba(77,208,225,0.4);border-radius:6px;padding:8px 12px;font-size:11px;color:#e8e2ff;text-align:center;min-width:60px;'
+      block.innerHTML='<div style="font-weight:600;">'+GROOVE_PRESETS[entry.groove].label+'</div><div style="color:#4dd0e1;">'+entry.bars+' bar'+(entry.bars>1?'s':'')+'</div>'
+      songEditorEl.appendChild(block)
+      if(idx<songChain.length-1){
+        const arrow=document.createElement('div')
+        arrow.style.cssText='color:#6b6f7a;align-self:center;'
+        arrow.textContent='→'
+        songEditorEl.appendChild(arrow)
+      }
+    })
+  }
+  // hook into renderSongChain so the editor stays in sync
+  const _origRenderSongChain=renderSongChain
+  renderSongChain=function(){_origRenderSongChain();renderSongEditor()}
+
+  // ── Phase C (C1): Kit Browser — search & filter kit presets ──
+  const kitSearch=document.getElementById('kitSearch')
+  const kitStyleFilter=document.getElementById('kitStyleFilter')
+  const kitResults=document.getElementById('kitResults')
+  // populate style filter with unique styles
+  const styles=[]
+  KIT_PRESETS.forEach(k=>{if(k.style && styles.indexOf(k.style)<0)styles.push(k.style)})
+  styles.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;kitStyleFilter.appendChild(o)})
+  // Phase C (C3.1): real-time master parameter display
+  function updateParamDisplay(){
+    const pd=document.getElementById('paramDisplay')
+    if(!pd)return
+    pd.textContent='BPM '+Math.round(bpm)+' · Swing '+Math.round(swing)+'% · Drive '+Math.round(liveDrive)+'% · Reverb '+Math.round(liveReverb)+'%'
+  }
+  function renderKitBrowser(){
+    if(!kitResults)return
+    kitResults.innerHTML=''
+    const q=(kitSearch.value||'').toLowerCase()
+    const sf=kitStyleFilter.value
+    KIT_PRESETS.forEach((k,ki)=>{
+      if(q && k.label.toLowerCase().indexOf(q)<0)return
+      if(sf && k.style!==sf)return
+      const chip=document.createElement('div')
+      chip.style.cssText='background:rgba(179,136,255,0.12);border:1px solid rgba(179,136,255,0.35);border-radius:6px;padding:5px 10px;font-size:11px;color:#e8e2ff;cursor:pointer;'
+      chip.textContent=k.label+(k.style?' · '+k.style:'')
+      chip.addEventListener('click',()=>{
+        const sel=document.getElementById('kitSelect')
+        if(sel){sel.value=String(ki);sel.dispatchEvent(new Event('change'))}
+      })
+      kitResults.appendChild(chip)
+    })
+  }
+  if(kitSearch)kitSearch.addEventListener('input',renderKitBrowser)
+  if(kitStyleFilter)kitStyleFilter.addEventListener('change',renderKitBrowser)
+  renderKitBrowser()
+
+  // Global error capture: surface runtime errors in the UI for debugging
+  window.addEventListener('error',(e)=>{
+    const box=document.createElement('div')
+    box.style.cssText='background:#2b1216;border:1px solid #ff5566;border-radius:8px;padding:10px;margin:10px;color:#ff8899;font-size:12px;'
+    box.textContent='Runtime error: '+(e.message||'unknown')+' @ '+(e.filename||'')
+    document.body.prepend(box)
+  })
+
+  // ── initial render ──
+  buildSeq()
+
+  // PWA: register the service worker for offline support
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}) }
+</script>
+</body>
+</html>
