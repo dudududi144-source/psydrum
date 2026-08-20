@@ -58,6 +58,7 @@ export interface SynthCtx {
   pitchHint: number | null // audit V6: MIDI note hint for pitched drums (tom/ride)
   timbre: number // audit M2b: per-hit seeded brightness multiplier (~1 +- 2%)
   clapTaps: Array<number> | null // audit M2c: seeded clap tap offsets in ms (null = fixed 0/12/24)
+  synthMix: number // audit M3: sample/synth crossfade weight for the synth side (1 = no sample)
 }
 
 // Create a real AudioBuffer on the given context and fill it deterministically.
@@ -173,7 +174,7 @@ export function buildKick(sc: SynthCtx): void {
   lpf.type = 'lowpass'
   lpf.frequency.value = params.cutoff
 
-  const g = envGain(ctx, now, params.gain, patchAttackMs(patch, 1), patchDecayMs(patch, 215), duration)
+  const g = envGain(ctx, now, params.gain * sc.synthMix, patchAttackMs(patch, 1), patchDecayMs(patch, 215), duration)
   sc.handles.gains.push(g)
   sc.handles.sources.push(osc)
   osc.connect(lpf)
@@ -202,7 +203,7 @@ function buildNoiseVoice(sc: SynthCtx, filterType: BiquadFilterType, defaultHz: 
   f.frequency.value = Math.max(40, Math.min(centerHz, ctx.sampleRate / 2 - 100))
   if (filterType === 'bandpass') f.Q.value = patch.noise !== undefined ? Math.max(0.4, patch.noise.mix) : 0.9
 
-  const g = envGain(ctx, now, sc.params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
+  const g = envGain(ctx, now, sc.params.gain * peakScale * sc.synthMix, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
   sc.handles.gains.push(g)
   sc.handles.sources.push(src)
   src.connect(f)
@@ -232,7 +233,7 @@ function buildTone(sc: SynthCtx, defaultHz: number, wave: OscillatorType, attack
   const osc = ctx.createOscillator()
   osc.type = wave
   osc.frequency.value = hz
-  const g = envGain(ctx, now, params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
+  const g = envGain(ctx, now, params.gain * peakScale * sc.synthMix, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)
   sc.handles.gains.push(g)
   sc.handles.sources.push(osc)
   osc.connect(g)

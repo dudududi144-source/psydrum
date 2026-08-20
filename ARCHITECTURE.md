@@ -149,7 +149,7 @@ Each drum is a small DSP chain, all deterministic, all zero-allocation on trigge
 
 ### 4.2 Sample layer (optional, per drum)
 
-Each drum can blend a sample under its synthesized body: patch.sample.gain 0..1 sets the sample level. Samples are fetched/decoded at host load time (sample-loader.ts), attached via device.setSample / enableSampleLayer, and played by voice-synth.playSampleLayer. Samples are procedural or CC0 only; kit-manifest provenance is enforced at load (never at runtime). If a sample fails to load, the drum falls back to synthesis-only + sampleFallbacks counter (never silent, never throws). Known gap: sample and synthesis currently STACK rather than true crossfade (roadmap).
+Each drum can blend a sample under its synthesized body: patch.sample.gain 0..1 sets the sample level. Samples are fetched/decoded at host load time (sample-loader.ts), attached via device.setSample / enableSampleLayer, and played by voice-synth.playSampleLayer. Samples are procedural or CC0 only; kit-manifest provenance is enforced at load (never at runtime). If a sample fails to load, the drum falls back to synthesis-only + sampleFallbacks counter (never silent, never throws). The blend is a true crossfade (audit M3): the synth side scales by 1 - sample.gain.
 
 ### 4.3 Velocity-to-timbre
 

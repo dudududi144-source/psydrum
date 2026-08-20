@@ -574,6 +574,12 @@ export class DrumDevice implements PsyDevice {
 
     // Audit V4: the builders register their nodes here so choke/steal/stop can
     // silence the ACTUAL audio, not just the bookkeeping.
+    // Audit M3: true sample/synth crossfade — the sample layer used to STACK
+    // on top of full synthesis (doubling energy, smearing transients). The
+    // synth side now scales down as patch.sample.gain rises:
+    // sample.gain 1 => synth silent; 0 => full synth; no sample => 1.
+    var sampleRef = patch === undefined ? undefined : patch.sample
+    var synthMix = sampleRef !== undefined ? Math.max(0, Math.min(1, 1 - sampleRef.gain)) : 1
     var handles: VoiceAudioHandle = { gains: [], sources: [] }
     var sc: SynthCtx = {
       ctx: this.ctx,
@@ -588,6 +594,7 @@ export class DrumDevice implements PsyDevice {
       pitchHint: pitch,
       timbre: timbre,
       clapTaps: clapTaps,
+      synthMix: synthMix,
     }
     // Audit V6: `pitch` is the router's MIDI pitch hint — consumed by tom/ride
     // in voice-synth; unpitched drums ignore it (B1 contract preserved).
