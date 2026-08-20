@@ -109,10 +109,12 @@ describe('audit M2b - per-hit timbre variance (humanize ON)', () => {
     const a = snare(100).centres[0]
     const b = snare(100).centres[0]
     expect(a).not.toBe(b) // brightness varies hit-to-hit
-    expect(a).toBeGreaterThanOrEqual(SNARE_BASE * 0.975)
-    expect(a).toBeLessThanOrEqual(SNARE_BASE * 1.025)
-    expect(b).toBeGreaterThanOrEqual(SNARE_BASE * 0.975)
-    expect(b).toBeLessThanOrEqual(SNARE_BASE * 1.025)
+    // window covers BOTH seeded draws: velocity humanize (+-3%) shifts the
+    // velocity-tracked brightness via velTrack, and timbre adds +-2% on top.
+    expect(a).toBeGreaterThanOrEqual(SNARE_BASE * 0.96)
+    expect(a).toBeLessThanOrEqual(SNARE_BASE * 1.04)
+    expect(b).toBeGreaterThanOrEqual(SNARE_BASE * 0.96)
+    expect(b).toBeLessThanOrEqual(SNARE_BASE * 1.04)
   })
 
   it('is deterministic per seed (same seed => identical centre sequence)', () => {
