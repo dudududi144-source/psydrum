@@ -57,11 +57,12 @@ import {
   resetPool,
 } from './voice-pool'
 import type { VoicePool } from './voice-pool'
-import { createVarianceSource, velocityHumanize } from './variance-rules'
+import { createVarianceSource, velocityHumanize, roundRobinVariant } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
 import { synthDrum, makeNoiseBuffer, silenceVoiceAudio } from './voice-synth'
+import { buildAudioBank, pickBankLayer } from './voice-bank'
 import { makeReverbIR } from './fx'
 import type { SynthCtx, VoiceAudioHandle } from './voice-synth'
 
@@ -93,6 +94,9 @@ export interface DrumDeviceOptions {
   kitPatches?: Partial<Record<DrumRole, DrumPatch>>
   optsSeed?: number
   noteMap?: Record<number, DrumRole>
+  // Audit M2 (ADR-008): pre-render ACB banks for kick/snare/hats at load time
+  // and play them instead of the realtime chains. Default false (opt-in).
+  useBank?: boolean
 }
 
 export class DrumDevice implements PsyDevice {
@@ -123,6 +127,10 @@ export class DrumDevice implements PsyDevice {
   // Audit V4: per-voice audio handles, indexed by pool slot, so choke/steal/
   // stop can silence the ACTUAL nodes (not just the bookkeeping).
   private voiceAudio: Array<VoiceAudioHandle | null>
+  // Audit M2 (ADR-008): optional pre-rendered bank (rebuilt at loadKit).
+  private useBank: boolean
+  private bank: Partial<Record<DrumRole, AudioBuffer[][]>> | null
+  private hitCounters: Partial<Record<DrumRole, number>>
 
   constructor(opts: DrumDeviceOptions) {
     this.id = opts.id === undefined ? 'psydrum' : opts.id
@@ -148,6 +156,9 @@ export class DrumDevice implements PsyDevice {
     this.delaySends = {}
     this.reverbSends = {}
     this.voiceAudio = []
+    this.useBank = opts.useBank === undefined ? false : opts.useBank
+    this.bank = null
+    this.hitCounters = {}
   }
 
   capabilities(): DeviceCapabilities {
@@ -198,6 +209,10 @@ export class DrumDevice implements PsyDevice {
     }
     this.patches = patches
     this.config.choke = kit.choke
+    // Audit M2: the bank is patch-derived; rebuild it when kits change.
+    if (this.useBank) {
+      this.bank = buildAudioBank(this.ctx, this.patches, this.variance.seed)
+    }
   }
 
   onStart(): void {
@@ -212,6 +227,10 @@ export class DrumDevice implements PsyDevice {
     this.pool = createVoicePool(this.config.voices)
     this.voiceAudio = new Array(this.pool.size)
     for (var vi = 0; vi < this.pool.size; vi++) this.voiceAudio[vi] = null
+    // Audit M2: build the bank once at start if enabled and not built yet.
+    if (this.useBank && this.bank === null) {
+      this.bank = buildAudioBank(this.ctx, this.patches, this.variance.seed)
+    }
     this.deviceOut = this.ctx.createGain()
     this.deviceOut.gain.value = 1
     this.deviceOut.connect(this.outputNode)
@@ -447,6 +466,40 @@ export class DrumDevice implements PsyDevice {
     this.startVoiceAudio(role, event, pitch, when, idx)
   }
 
+  // Audit M2 (ADR-008): realize a voice from the pre-rendered bank. Returns
+  // null when the role is not banked (caller falls back to synthesis).
+  private bankVoice(role: DrumRole, vel: number, when: number): VoiceAudioHandle | null {
+    if (this.bank === null) return null
+    var layers = this.bank[role]
+    if (layers === undefined) return null
+    var bus = this.buses[role]
+    if (bus === undefined) return null
+    var patch = this.patches[role]
+
+    var v01 = Math.max(0, Math.min(1, vel / 127))
+    var layer = layers[pickBankLayer(v01, layers.length)]
+    var count = this.hitCounters[role] === undefined ? 0 : this.hitCounters[role]
+    this.hitCounters[role] = count + 1
+    var variant = layer[roundRobinVariant(count, layer.length)]
+
+    var src = this.ctx.createBufferSource()
+    src.buffer = variant
+    var g = this.ctx.createGain()
+    var attackMs = patch !== undefined && patch.amp !== undefined ? patch.amp.attackMs : 1
+    var decayMs = patch !== undefined && patch.amp !== undefined ? patch.amp.decayMs : 200
+    var a = Math.max(0.001, attackMs / 1000)
+    var d = Math.max(0.02, decayMs / 1000)
+    var dur = variant.duration
+    g.gain.setValueAtTime(0.0001, when)
+    g.gain.linearRampToValueAtTime(1, when + a)
+    g.gain.exponentialRampToValueAtTime(0.001, when + Math.max(a + 0.01, Math.min(dur, d)))
+    src.connect(g)
+    g.connect(bus)
+    src.start(when)
+    src.stop(when + dur + 0.05)
+    return { gains: [g], sources: [src] }
+  }
+
   private startVoiceAudio(role: DrumRole, event: NoteEvent, pitch: number | null, when: number, idx: number): void {
     if (this.deviceOut === null) return
     var bus = this.buses[role]
@@ -466,6 +519,18 @@ export class DrumDevice implements PsyDevice {
     // choke, routing and drop policy are NEVER touched by variance.
     if (this.config.humanize) {
       vel = vel * velocityHumanize(this.variance.rng)
+    }
+    // Audit M2 (ADR-008): banked roles play pre-rendered ACB buffers; the
+    // humanized velocity picks the layer, the RR counter picks the variant
+    // (anti machine-gun). Non-banked roles fall through to synthesis.
+    if (this.useBank) {
+      var bankHandles = this.bankVoice(role, vel, when)
+      if (bankHandles !== null) {
+        if (idx >= 0 && idx < this.voiceAudio.length) {
+          this.voiceAudio[idx] = bankHandles
+        }
+        return
+      }
     }
     var params = resolveDrumParams(patch === undefined ? {} : patch, vel, 'linear', 2, this.ctx.sampleRate / 2)
 

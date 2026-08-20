@@ -74,7 +74,7 @@ export interface AcbKickParams {
 // Render an ACB-modeled kick drum.
 // The body oscillator is run through the resonant SVF. The filter resonance
 // is what produces the characteristic analog "boom" that a plain sine cannot.
-export function renderAcbKick(p: AcbKickParams): Float32Array {
+export function renderAcbKick(p: AcbKickParams, noiseSeed?: number): Float32Array {
   const sr = p.sampleRate
   const n = Math.max(1, Math.floor(sr * p.durationSec))
   const out = new Float32Array(n)
@@ -86,7 +86,9 @@ export function renderAcbKick(p: AcbKickParams): Float32Array {
   const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
 
   let phase = 0
-  let noiseState = 0x12345678 >>> 0
+  // Audit M2: noiseSeed is optional for round-robin variants; the default
+  // preserves the original deterministic render byte-for-byte.
+  let noiseState = (noiseSeed === undefined ? 0x12345678 : noiseSeed) >>> 0
 
   for (let i = 0; i < n; i++) {
     const t = i / sr
@@ -175,7 +177,7 @@ export interface AcbSnareParams {
   driveDb: number
 }
 
-export function renderAcbSnare(p: AcbSnareParams): Float32Array {
+export function renderAcbSnare(p: AcbSnareParams, noiseSeed?: number): Float32Array {
   const sr = p.sampleRate
   const n = Math.max(1, Math.floor(sr * p.durationSec))
   const out = new Float32Array(n)
@@ -184,7 +186,8 @@ export function renderAcbSnare(p: AcbSnareParams): Float32Array {
   const toneDecay = Math.max(0.01, p.toneDecayMs / 1000)
   const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
   let tonePhase = 0
-  let noiseState = 0x9e3779b9 >>> 0
+  // Audit M2: optional seed for round-robin variants (default unchanged).
+  let noiseState = (noiseSeed === undefined ? 0x9e3779b9 : noiseSeed) >>> 0
   for (let i = 0; i < n; i++) {
     const t = i / sr
     const toneHz = Math.max(40, p.toneHz - p.tonePitchDropHz * (1 - Math.exp(-t / 0.02)))
@@ -217,20 +220,23 @@ export interface AcbHatParams {
   driveDb: number
 }
 
-export function renderAcbHat(p: AcbHatParams): Float32Array {
+export function renderAcbHat(p: AcbHatParams, detuneCents?: number): Float32Array {
   const sr = p.sampleRate
   const n = Math.max(1, Math.floor(sr * p.durationSec))
   const out = new Float32Array(n)
   const svf = new SVF(sr, p.hpHz, p.hpResonance)
   const decay = Math.max(0.005, p.decayMs / 1000)
   const drive = Math.pow(10, Math.max(0, p.driveDb) / 20)
+  // Audit M2: optional micro-detune for round-robin variants (default 0 keeps
+  // the original render byte-for-byte).
+  const mh = p.metalHz * Math.pow(2, (detuneCents === undefined ? 0 : detuneCents) / 1200)
   let ph1 = 0
   let ph2 = 0
   for (let i = 0; i < n; i++) {
     const t = i / sr
-    ph1 += p.metalHz / sr
+    ph1 += mh / sr
     if (ph1 >= 1) ph1 -= Math.floor(ph1)
-    ph2 += (p.metalHz * p.ringRatio) / sr
+    ph2 += (mh * p.ringRatio) / sr
     if (ph2 >= 1) ph2 -= Math.floor(ph2)
     const sq1 = ph1 < 0.5 ? 1 : -1
     const sq2 = ph2 < 0.5 ? 1 : -1

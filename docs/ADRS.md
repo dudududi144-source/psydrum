@@ -121,3 +121,33 @@ measure the actual rendered audio (spectral energy, transients, decay).
 **Consequences**:
 - Tests catch "sounds wrong" bugs that unit tests miss.
 - CI runs the full render-proof suite.
+
+---
+
+## ADR-008: Hybrid Buffer Bank for Drum Realization
+
+**Status**: Accepted (opt-in via useBank)
+
+**Context**: The realtime voice-synth chains are WebAudio-native and cheap, but the
+ACB offline engines (SVF resonance, oversampled drive) demonstrably sound better —
+the render-proof tests prove it. The offline engines, however, cannot modulate
+per-hit at realtime. Both are needed: the sound AND the expression.
+
+**Decision**: PSYDRUM supports a hybrid buffer bank. When `useBank: true`, the
+device pre-renders a bank of BANK_VELOCITY_LAYERS (3, gain-layered) x
+BANK_VARIANTS (2, seeded-noise / micro-detune round-robin) per banked role
+(kick / snare / hat-closed / hat-open — exactly the roles with ACB engines) at
+load time, deterministic per device seed. At trigger time the humanized
+velocity picks the layer and a round-robin hit counter picks the variant.
+Envelope / choke / steal / stop ramps apply to bank voices exactly as to
+synth voices (VoiceAudioHandle). Roles without offline engines (clap / tom /
+perc) fall through to realtime synthesis. The bank is rebuilt on loadKit.
+Default stays `useBank: false` until host/demo adoption.
+
+**Consequences**:
+- Velocity-to-timbre on pre-rendered material is gain-layered (ADR-004 known
+  limitation; true multi-layer samples or realtime engines are future work).
+- roundRobinVariant and the variance machinery get a real home.
+- One-time load-time render cost (~24 short offline renders) on the main
+  thread; the audio hot path stays allocation-free.
+- Determinism preserved: same (patches, sampleRate, seed) => identical bank.

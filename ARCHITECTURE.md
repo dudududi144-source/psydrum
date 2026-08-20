@@ -40,6 +40,7 @@ Hard rules inherited from the family:
       note-router.ts                NoteEvent -> drum voice on/off/choke decisions
       voice.ts                      pure DSP math: envelopes, velocity curves, param resolution
       voice-synth.ts                WebAudio realization of per-drum chains + sample layer + silence ramps
+      voice-bank.ts                 pre-rendered ACB buffer bank (opt-in useBank, ADR-008)
       voice-pool.ts                 pooled drum voices + deterministic steal (pure bookkeeping)
       choke.ts                      choke-group state machine (open hat chokes closed, etc.)
       kit-library.ts                kit manifest load, validation, provenance, sample fallback
