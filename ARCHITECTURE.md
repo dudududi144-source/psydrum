@@ -49,7 +49,7 @@ Hard rules inherited from the family:
       presets.ts                    kit + groove preset library (WHAT data, host-owned)
       grooves.ts                    16-step groove templates (WHAT data, host-owned)
       sample-loader.ts              sample fetch + decode (host load-time helper)
-      variance-rules.ts             seeded micro-variance (velocity humanize wired at device, audit V2)
+      variance-rules.ts             seeded micro-variance (velocity humanize + per-hit timbre variance wired at device, audits V2/M2b)
       midi-map.ts                   drum MIDI note map + CC <-> parameter table, MIDI-learn
       latency.ts                    measured baseLatency (trigger-overhead hook present, not yet measured)
       counters.ts                   event/voice/steal/choke counters (observability, no logging in audio path)

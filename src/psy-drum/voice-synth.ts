@@ -56,6 +56,7 @@ export interface SynthCtx {
   sample: AudioBuffer | null // optional per-drum sample layer (step H)
   handles: VoiceAudioHandle // audit V4: nodes a choke/steal/stop must silence
   pitchHint: number | null // audit V6: MIDI note hint for pitched drums (tom/ride)
+  timbre: number // audit M2b: per-hit seeded brightness multiplier (~1 +- 2%)
 }
 
 // Create a real AudioBuffer on the given context and fill it deterministically.
@@ -194,7 +195,10 @@ function buildNoiseVoice(sc: SynthCtx, filterType: BiquadFilterType, defaultHz: 
   // Audit V1 fix: params.noiseBrightness is a velocity-tracked centre in Hz
   // (voice.ts section 4.3); the old formula treated it as a 0..1 factor and
   // pinned every noise filter to the Nyquist guard, muting hats/cymbals.
-  f.frequency.value = resolveNoiseFilterHz(params.noiseBrightness, baseHz, ctx.sampleRate / 2 - 100)
+  // Audit M2b: the seeded per-hit timbre multiplier shifts the centre slightly
+  // (brightness varies hit-to-hit; pitch and loudness do not).
+  const centerHz = resolveNoiseFilterHz(params.noiseBrightness, baseHz, ctx.sampleRate / 2 - 100) * sc.timbre
+  f.frequency.value = Math.max(40, Math.min(centerHz, ctx.sampleRate / 2 - 100))
   if (filterType === 'bandpass') f.Q.value = patch.noise !== undefined ? Math.max(0.4, patch.noise.mix) : 0.9
 
   const g = envGain(ctx, now, sc.params.gain * peakScale, patchAttackMs(patch, attackMs), patchDecayMs(patch, decayMs), sc.duration)

@@ -57,7 +57,7 @@ import {
   resetPool,
 } from './voice-pool'
 import type { VoicePool } from './voice-pool'
-import { createVarianceSource, velocityHumanize, roundRobinVariant } from './variance-rules'
+import { createVarianceSource, velocityHumanize, roundRobinVariant, timbreVariance } from './variance-rules'
 import type { VarianceSource } from './variance-rules'
 import { resolveDrumParams } from './voice'
 import { noteToRole, DEFAULT_DRUM_NOTE_MAP } from './midi-map'
@@ -85,6 +85,10 @@ export const STEAL_RELEASE_MS = 8
 // Audit V5: note-off realizes an audible release over this default window when
 // the patch has no amp.releaseMs (previously releaseMs was validated but dead).
 export const DEFAULT_RELEASE_MS = 30
+
+// Audit M2b: per-hit timbre variance depth for the realtime path (seeded,
+// deterministic). Brightness varies hit-to-hit; pitch and routing never do.
+export const TIMBRE_VARIANCE_DEPTH = 0.02
 
 export interface DrumDeviceOptions {
   id?: string
@@ -520,6 +524,14 @@ export class DrumDevice implements PsyDevice {
     if (this.config.humanize) {
       vel = vel * velocityHumanize(this.variance.rng)
     }
+    // Audit M2b: seeded per-hit timbre variance — a small multiplier around 1
+    // applied to the noise filter centre in voice-synth (brightness varies;
+    // loudness/pitch do not). Drawn AFTER velocity so the seeded sequence is
+    // stable and deterministic per device seed.
+    var timbre = 1
+    if (this.config.humanize) {
+      timbre = timbreVariance(this.variance.rng, TIMBRE_VARIANCE_DEPTH)
+    }
     // Audit M2 (ADR-008): banked roles play pre-rendered ACB buffers; the
     // humanized velocity picks the layer, the RR counter picks the variant
     // (anti machine-gun). Non-banked roles fall through to synthesis.
@@ -551,6 +563,7 @@ export class DrumDevice implements PsyDevice {
       sample: this.samples[role] === undefined ? null : this.samples[role],
       handles: handles,
       pitchHint: pitch,
+      timbre: timbre,
     }
     // Audit V6: `pitch` is the router's MIDI pitch hint — consumed by tom/ride
     // in voice-synth; unpitched drums ignore it (B1 contract preserved).
