@@ -65,10 +65,10 @@ ul.gaps li b { color:#ffb74d; }
 </div>
 
 <div class="snapshot">
-  <div class="chip"><b>HEAD</b>&nbsp; 762e91d7 (main)</div>
+  <div class="chip"><b>HEAD</b>&nbsp; e22c85d5 (main)</div>
   <div class="chip green"><b>CI</b>&nbsp; test ✓ · structure ✓ · secret-scan ✓ · docs-lint ✓ · render-proof ✓</div>
   <div class="chip green"><b>tests</b>&nbsp; 388 total · 387 pass · 0 fail</div>
-  <div class="chip warn"><b>gaps</b>&nbsp; 4 open (below)</div>
+  <div class="chip warn"><b>gaps</b>&nbsp; 3 open (below)</div>
 </div>
 
 <h2>Hardening timeline — every step CI-verified</h2>
@@ -92,6 +92,8 @@ ul.gaps li b { color:#ffb74d; }
 <tr><td class="sha">1526df66</td><td class="ph">P1 stress</td><td class="msg">sustained-saturation + overhead + determinism + restart harness</td></tr>
 <tr><td class="sha">019b830f</td><td class="ph">P2 render proof</td><td class="msg">device rendered through REAL Chromium WebAudio (OfflineAudioContext)</td></tr>
 <tr><td class="sha">762e91d7</td><td class="ph">P0.2b</td><td class="msg">gain tracking: global steals take the QUIETEST voice (was dead tie-break)</td></tr>
+<tr><td class="sha">2fd2e3c8</td><td class="ph">P0.4</td><td class="msg">enforced green Typecheck CI gate; 17 genuine type errors fixed; noUncheckedIndexedAccess relaxed as documented deferral</td></tr>
+<tr><td class="sha">e22c85d5</td><td class="ph">M5 prov.</td><td class="msg">removed 9 unverified samples/real/* assets; demo falls back to ACB synth / pure synthesis; PROVENANCE.json records the removal</td></tr>
 </table>
 
 <h2>Verified measurements (from CI logs, not claims)</h2>
@@ -112,8 +114,8 @@ ul.gaps li b { color:#ffb74d; }
 
 <h2>Open gaps — declared, not hidden</h2>
 <ul class="gaps">
-  <li><b>Sample provenance (decision needed).</b> PROVENANCE.json audits all 34 shipped samples; every asset is flagged UNVERIFIED (naming suggests md_/nord_/909 commercial origins). Action required per asset: record author+license, or remove. This is a licensing decision, not a code fix.</li>
-  <li><b>P0.4 typecheck gate (measured, decision pending).</b> Local tsc 5.9.3 run: current tsconfig reports 405 errors, of which 388 come from noUncheckedIndexedAccess (declared but never enforced). With that flag relaxed + node types: 17 genuine type errors remain. Decision needed: retrofit the flag, or relax it and add an enforced green gate.</li>
+  <li><b>Sample provenance (partially closed).</b> The 9 <code>public/samples/real/*</code> assets (909/MachineDrum/Nord) were REMOVED at e22c85d5 because their licenses could not be verified; the demo now falls back to ACB synth / pure synthesis. The remaining 25 non-real samples stay flagged UNVERIFIED in PROVENANCE.json and still need a per-asset licensing decision.</li>
+  <li><b>P0.4 typecheck gate — CLOSED.</b> All 17 genuine type errors fixed and an enforced green <code>Typecheck</code> CI step added (2fd2e3c8 + dedupe fix). <code>noUncheckedIndexedAccess</code> relaxed as a documented deferral; node types + typescript/@types devDeps added.</li>
   <li><b>Listening panel (manual).</b> "psytrance-grade" is a perceptual claim; only a human A/B panel against reference material can verify it. Not automatable.</li>
   <li><b>Mobile QA matrix (manual).</b> iOS Safari / Android Chrome suspend-resume and latency behavior need hands-on device testing.</li>
 </ul>
