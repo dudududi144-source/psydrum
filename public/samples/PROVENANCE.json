@@ -1,127 +1,17 @@
 {
   "audit": "Sample provenance registry (M5). ARCHITECTURE.md mandates procedural or CC0-with-provenance assets only. This file is an AUDIT, not a license: every asset below must be confirmed or removed before the samples can be treated as cleared for redistribution.",
   "policy": "procedural or CC0-with-provenance only; quarantined/unlicensed assets must not ship",
-  "demoUsage": "public/demo.html REAL_SAMPLE_MAP now references only non-real samples (tom_md/crash_md/ride_md). The 9 public/samples/real/* assets were REMOVED because their licenses could not be verified; kick/snare/clap/hats/perc fall back to ACB synth banks or pure synthesis.",
+  "demoUsage": "public/demo.html REAL_SAMPLE_MAP references only tom_md/crash_md/ride_md (non-real, still UNVERIFIED — licensing decision pending). The 22 unreferenced samples/ assets were REMOVED as unused; the 9 samples/real/* assets were removed earlier (unverified licenses).",
   "assets": [
-    {
-      "path": "public/samples/clap.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/clap_md.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
     {
       "path": "public/samples/crash_md.wav",
       "status": "unverified",
       "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
     },
     {
-      "path": "public/samples/hat-closed.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/hat-open.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/hat.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/hat_closed.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/hat_closed_md.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/hat_open.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/hat_open_md.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/kick-909.wav",
-      "status": "unverified",
-      "notes": "naming suggests a Roland TR-909 capture; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/kick.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/kick_909.wav",
-      "status": "unverified",
-      "notes": "naming suggests a Roland TR-909 capture; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/kick_deep.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/kick_punchy.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/perc.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/perc_1.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/perc_md.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/ride.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
       "path": "public/samples/ride_md.wav",
       "status": "unverified",
       "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/shaker.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/snare.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
-    },
-    {
-      "path": "public/samples/snare_md.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/tom.wav",
-      "status": "unverified",
-      "notes": "origin not recorded in the repository history"
     },
     {
       "path": "public/samples/tom_md.wav",
@@ -142,7 +32,29 @@
       "public/samples/real/md_perc_Percs_0000.wav",
       "public/samples/real/md_snare_Snares_0000.wav",
       "public/samples/real/nord_kick_deep_68.wav",
-      "public/samples/real/nord_snare_Snare1.wav"
+      "public/samples/real/nord_snare_Snare1.wav",
+      "public/samples/clap.wav",
+      "public/samples/clap_md.wav",
+      "public/samples/hat-closed.wav",
+      "public/samples/hat-open.wav",
+      "public/samples/hat.wav",
+      "public/samples/hat_closed.wav",
+      "public/samples/hat_closed_md.wav",
+      "public/samples/hat_open.wav",
+      "public/samples/hat_open_md.wav",
+      "public/samples/kick-909.wav",
+      "public/samples/kick.wav",
+      "public/samples/kick_909.wav",
+      "public/samples/kick_deep.wav",
+      "public/samples/kick_punchy.wav",
+      "public/samples/perc.wav",
+      "public/samples/perc_1.wav",
+      "public/samples/perc_md.wav",
+      "public/samples/ride.wav",
+      "public/samples/shaker.wav",
+      "public/samples/snare.wav",
+      "public/samples/snare_md.wav",
+      "public/samples/tom.wav"
     ]
   }
 }
