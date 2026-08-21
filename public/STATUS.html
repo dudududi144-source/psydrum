@@ -65,7 +65,7 @@ ul.gaps li b { color:#ffb74d; }
 </div>
 
 <div class="snapshot">
-  <div class="chip"><b>HEAD</b>&nbsp; e22c85d5 (main)</div>
+  <div class="chip"><b>HEAD</b>&nbsp; f948b7df (main)</div>
   <div class="chip green"><b>CI</b>&nbsp; test ✓ · structure ✓ · secret-scan ✓ · docs-lint ✓ · render-proof ✓</div>
   <div class="chip green"><b>tests</b>&nbsp; 388 total · 387 pass · 0 fail</div>
   <div class="chip warn"><b>gaps</b>&nbsp; 3 open (below)</div>
@@ -94,6 +94,8 @@ ul.gaps li b { color:#ffb74d; }
 <tr><td class="sha">762e91d7</td><td class="ph">P0.2b</td><td class="msg">gain tracking: global steals take the QUIETEST voice (was dead tie-break)</td></tr>
 <tr><td class="sha">2fd2e3c8</td><td class="ph">P0.4</td><td class="msg">enforced green Typecheck CI gate; 17 genuine type errors fixed; noUncheckedIndexedAccess relaxed as documented deferral</td></tr>
 <tr><td class="sha">e22c85d5</td><td class="ph">M5 prov.</td><td class="msg">removed 9 unverified samples/real/* assets; demo falls back to ACB synth / pure synthesis; PROVENANCE.json records the removal</td></tr>
+<tr><td class="sha">006b8206</td><td class="ph">M5 prov.</td><td class="msg">removed 22 unreferenced samples/ assets (only 3 of 25 were demo-referenced)</td></tr>
+<tr><td class="sha">f948b7df</td><td class="ph">M5 prov.</td><td class="msg">aligned PROVENANCE.json to the 3 remaining referenced (still-UNVERIFIED) samples</td></tr>
 </table>
 
 <h2>Verified measurements (from CI logs, not claims)</h2>
@@ -114,7 +116,7 @@ ul.gaps li b { color:#ffb74d; }
 
 <h2>Open gaps — declared, not hidden</h2>
 <ul class="gaps">
-  <li><b>Sample provenance (partially closed).</b> The 9 <code>public/samples/real/*</code> assets (909/MachineDrum/Nord) were REMOVED at e22c85d5 because their licenses could not be verified; the demo now falls back to ACB synth / pure synthesis. The remaining 25 non-real samples stay flagged UNVERIFIED in PROVENANCE.json and still need a per-asset licensing decision.</li>
+  <li><b>Sample provenance (nearly closed).</b> The 9 <code>public/samples/real/*</code> assets were REMOVED at e22c85d5, and 22 more UNREFERENCED samples were removed at 006b8206; PROVENANCE.json reconciled at f948b7df. Only 3 referenced samples remain (crash_md/ride_md/tom_md), still UNVERIFIED and needing a licensing decision.</li>
   <li><b>P0.4 typecheck gate — CLOSED.</b> All 17 genuine type errors fixed and an enforced green <code>Typecheck</code> CI step added (2fd2e3c8 + dedupe fix). <code>noUncheckedIndexedAccess</code> relaxed as a documented deferral; node types + typescript/@types devDeps added.</li>
   <li><b>Listening panel (manual).</b> "psytrance-grade" is a perceptual claim; only a human A/B panel against reference material can verify it. Not automatable.</li>
   <li><b>Mobile QA matrix (manual).</b> iOS Safari / Android Chrome suspend-resume and latency behavior need hands-on device testing.</li>
