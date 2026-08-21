@@ -178,12 +178,7 @@ body {
 
   // Real drum samples (commercial-quality, from psy5) mapped per channel.
   const REAL_SAMPLES = {
-    'kick': './samples/real/909_BD_02.wav',
-    'snare': './samples/real/md_snare_Snares_0000.wav',
-    'clap': './samples/real/md_clap_Claps_0000.wav',
-    'hat-closed': './samples/real/md_hat_Hats_0008.wav',
-    'hat-open': './samples/real/md_hat_Hats_0013.wav',
-    'perc': './samples/real/md_perc_Percs_0000.wav',
+    // Audit M5 (provenance): unverified-license samples removed.
   }
   const realBuffers = {}   // channel -> AudioBuffer (loaded lazily)
   async function loadRealSample(channel){
@@ -579,13 +574,9 @@ body {
   const samplesBtn=document.getElementById('samplesBtn')
   // Clean single map: real commercial samples where available, synth fallback otherwise.
   const REAL_SAMPLE_MAP={
-    kick:'samples/real/nord_kick_deep_68.wav',
-    snare:'samples/real/nord_snare_Snare1.wav',
-    clap:'samples/real/md_clap_Claps_0000.wav',
-    'hat-closed':'samples/real/md_hat_Hats_0008.wav',
-    'hat-open':'samples/real/md_hat_Hats_0013.wav',
+    // Audit M5 (provenance): unverified-license samples removed;
+    // kick/snare/clap/hats/perc fall back to ACB synth or pure synthesis.
     tom:'samples/tom_md.wav',
-    perc:'samples/real/md_perc_Percs_0000.wav',
     crash:'samples/crash_md.wav',
     ride:'samples/ride_md.wav'
   }

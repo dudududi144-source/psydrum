@@ -1,7 +1,7 @@
 {
   "audit": "Sample provenance registry (M5). ARCHITECTURE.md mandates procedural or CC0-with-provenance assets only. This file is an AUDIT, not a license: every asset below must be confirmed or removed before the samples can be treated as cleared for redistribution.",
   "policy": "procedural or CC0-with-provenance only; quarantined/unlicensed assets must not ship",
-  "demoUsage": "public/index.html REAL_SAMPLE_MAP streams public/samples/real/{nord_kick_deep_68, nord_snare_Snare1, md_clap_Claps_0000, md_hat_Hats_0008, md_hat_Hats_0013, md_perc_Percs_0000}.wav when the samples toggle is on; ACB banks / realtime synthesis cover everything else.",
+  "demoUsage": "public/demo.html REAL_SAMPLE_MAP now references only non-real samples (tom_md/crash_md/ride_md). The 9 public/samples/real/* assets were REMOVED because their licenses could not be verified; kick/snare/clap/hats/perc fall back to ACB synth banks or pure synthesis.",
   "assets": [
     {
       "path": "public/samples/clap.wav",
@@ -127,52 +127,22 @@
       "path": "public/samples/tom_md.wav",
       "status": "unverified",
       "notes": "naming suggests Elektron MachineDrum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/909_BD_02.wav",
-      "status": "unverified",
-      "notes": "naming suggests a Roland TR-909 capture; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/md_clap_Claps_0000.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/md_hat_Hats_0008.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/md_hat_Hats_0013.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/md_kick_Kicks_0000.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/md_perc_Percs_0000.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/md_snare_Snares_0000.wav",
-      "status": "unverified",
-      "notes": "naming suggests Elektron MachineDrum factory content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/nord_kick_deep_68.wav",
-      "status": "unverified",
-      "notes": "naming suggests Nord Drum content; license confirmation required before redistribution"
-    },
-    {
-      "path": "public/samples/real/nord_snare_Snare1.wav",
-      "status": "unverified",
-      "notes": "naming suggests Nord Drum content; license confirmation required before redistribution"
     }
   ],
-  "actionRequired": "for each asset: record author + license (CC0/public-domain/procedural), or delete the file and its demo reference"
+  "actionRequired": "for each asset: record author + license (CC0/public-domain/procedural), or delete the file and its demo reference",
+  "removals": {
+    "removedAt": "M5 provenance enforcement",
+    "reason": "licenses could not be verified (naming suggested commercial 909/MachineDrum/Nord origins)",
+    "removedPaths": [
+      "public/samples/real/909_BD_02.wav",
+      "public/samples/real/md_clap_Claps_0000.wav",
+      "public/samples/real/md_hat_Hats_0008.wav",
+      "public/samples/real/md_hat_Hats_0013.wav",
+      "public/samples/real/md_kick_Kicks_0000.wav",
+      "public/samples/real/md_perc_Percs_0000.wav",
+      "public/samples/real/md_snare_Snares_0000.wav",
+      "public/samples/real/nord_kick_deep_68.wav",
+      "public/samples/real/nord_snare_Snare1.wav"
+    ]
+  }
 }
